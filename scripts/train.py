@@ -125,6 +125,7 @@ def main():
     print(f"  Stage:      {stage}")
     print(f"  Action:     {action_space}")
     print(f"  Conservation: {conservation}")
+    print(f"  Bidirectional: {env_config.get('bidirectional', False)}")
     print(f"  Steps:      {total_steps:,}")
     print(f"  Checkpoint: every {checkpoint_interval:,}")
     print(f"  Eval:       every {eval_interval:,}")
@@ -153,6 +154,13 @@ def main():
     env["COUNTING_STAGE"] = str(stage)
     env["COUNTING_CONSERVATION"] = str(conservation).lower()
     env["COUNTING_ACTION_SPACE"] = action_space
+    bidirectional = env_config.get("bidirectional", False)
+    env["COUNTING_BIDIRECTIONAL"] = str(bidirectional).lower()
+    # Point to bridge's compiled JS (updated version with bidirectional support)
+    env["COUNTING_BRIDGE_SCRIPT"] = str(BRIDGE / "dist" / "bridge.js")
+    # Bidirectional episodes are ~2x longer (mark + unmark) — increase max steps
+    if bidirectional:
+        env["COUNTING_MAX_STEPS"] = str(env_config.get("max_steps", 10000))
 
     # PYTHONPATH: our scripts/ dir first so local models.py/dreamer.py shadow originals
     env["PYTHONPATH"] = str(BRIDGE_SCRIPTS) + ":" + env.get("PYTHONPATH", "")
