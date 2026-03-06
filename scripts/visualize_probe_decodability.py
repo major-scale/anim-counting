@@ -159,15 +159,15 @@ def fig1_probe_histograms(baseline, randproj, output_dir):
     for ax in [ax_b, ax_r]:
         ax.set_xlim(all_proj.min() - margin, all_proj.max() + margin)
 
-    # Colorbar
-    sm = plt.cm.ScalarMappable(cmap='viridis', norm=mcolors.Normalize(0, 25))
-    sm.set_array([])
-    cbar = fig.colorbar(sm, ax=[ax_b, ax_r], shrink=0.8, pad=0.02, aspect=30)
-    cbar.set_label('Count', fontsize=10)
-
     fig.suptitle('Linear Probe Decodability: Where Counts Overlap Along the Probe Direction',
                  fontsize=13, fontweight='bold', y=1.02)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 0.88, 1])
+
+    # Colorbar — placed after tight_layout, with enough pad to sit outside plots
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=mcolors.Normalize(0, 25))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=[ax_b, ax_r], shrink=0.7, pad=0.05, aspect=30)
+    cbar.set_label('Count', fontsize=10)
 
     for ext in ['png', 'pdf']:
         fig.savefig(output_dir / f'probe_histograms.{ext}',
@@ -219,15 +219,15 @@ def fig2_probe_vs_noise(baseline, randproj, output_dir):
         ax.set_xlim(all_x.min() - x_margin, all_x.max() + x_margin)
         ax.set_ylim(all_y.min() - y_margin, all_y.max() + y_margin)
 
-    # Colorbar
-    sm = plt.cm.ScalarMappable(cmap='viridis', norm=mcolors.Normalize(0, 25))
-    sm.set_array([])
-    cbar = fig.colorbar(sm, ax=[ax_b, ax_r], shrink=0.8, pad=0.02, aspect=30)
-    cbar.set_label('Count', fontsize=10)
-
     fig.suptitle('Count Signal vs Noise: Factorized Columns (right) vs Entangled Clouds (left)',
                  fontsize=13, fontweight='bold', y=1.02)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 0.88, 1])
+
+    # Colorbar — placed after tight_layout, with enough pad to sit outside plots
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=mcolors.Normalize(0, 25))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=[ax_b, ax_r], shrink=0.7, pad=0.05, aspect=30)
+    cbar.set_label('Count', fontsize=10)
 
     for ext in ['png', 'pdf']:
         fig.savefig(output_dir / f'probe_vs_noise.{ext}',

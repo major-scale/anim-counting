@@ -9,6 +9,7 @@ We built a simple 2D world where a bot picks up blobs and places them on a grid.
 Inside the model's 512-dimensional hidden state, a **number line emerges**.
 
 Not approximately. A geometrically precise 1D arc where each position corresponds to a count, verified with tools from pure mathematics:
+
 - **Persistent homology** confirms it's a line (not a loop, not a surface) &mdash; Betti numbers &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0
 - **Geodesic analysis** confirms the spacing is uniform (like marks on a ruler) &mdash; arc-length R&sup2;=0.998
 - **Representational similarity analysis** confirms the ordering is correct &mdash; RSA=0.982
@@ -31,27 +32,27 @@ Yes. A linear probe (a single matrix multiply plus bias) applied to the 512-dime
 
 - **Topology is correct**: Persistent homology gives &beta;<sub>0</sub>=1 (one connected component) and &beta;<sub>1</sub>=0 (no loops). This is the topology of a line segment, not a circle, not a surface, not a disconnected set.
 - **Spacing is uniform**: The geodesic distance between consecutive count centroids is constant. This isn't just "the centroids are in the right order" &mdash; the distance from count 5 to count 6 is the same as the distance from count 20 to count 21. Arc-length R&sup2;=0.998 across 6 independent training seeds.
-- **The metric is novel**: We developed Geodesic Homogeneity Error (GHE) to measure this properly. Standard Euclidean metrics reported high error because the manifold curves through 512-dimensional space. GHE follows the curve and reveals uniform spacing. Mean GHE=0.329&plusmn;0.027 across 6 seeds (threshold: <0.5).
+- **The metric is novel**: We developed Geodesic Homogeneity Error (GHE) to measure this properly. Standard Euclidean metrics reported high error because the manifold curves through 512-dimensional space. GHE follows the curve and reveals approximately uniform spacing. Mean GHE=0.329&plusmn;0.027 across 6 seeds (threshold: <0.5).
 
 ## Robustness: We Tried to Break It
 
-Every row in this table is a separate training run (200K steps, ~4 hours on an RTX 4090). Every single one produced a valid number line.
+Every row in this table is a separate training run (50K–300K steps). Every single one produced a valid number line.
 
-| Condition | What we changed | GHE | Topology | RSA |
-|:---|:---|:---:|:---:|:---:|
-| **Grid baseline** (6 seeds) | Nothing &mdash; control condition | 0.329&plusmn;0.027 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.982 |
-| **Line arrangement** | Blobs start in a line instead of scattered | 0.288 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.982 |
-| **Scatter arrangement** | Blobs start at random positions | 0.334 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.980 |
-| **Circle arrangement** | Blobs start in a ring | 0.394 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.978 |
-| **No count signal** | Masked the count from observations | 0.336&plusmn;0.091 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
-| **No slots + no count** | Masked both grid assignments and count | 0.344&plusmn;0.045 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
-| **Shuffled + starved** | Scrambled blob identities every frame, masked grid and count | 0.367&plusmn;0.081 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.985 |
-| **Random projection** (3 seeds) | Multiplied observations by a random orthogonal matrix | 0.326&plusmn;0.063 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.983 |
-| **Random permutation** (3 seeds) | Shuffled the order of observation dimensions | 0.346&plusmn;0.052 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
-| **LSTM** | Replaced DreamerV3 with a simple LSTM | 0.379 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.980 |
-| **Embodied agent** | Agent learns to steer and gather autonomously | 0.443 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.806 |
-| **Multi-dim D=2** | Gathering in 2D (mixed training across 2D-5D) | 0.439 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.943 |
-| **Multi-dim D=3** | Gathering in 3D | 0.325 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.954 |
+| Condition                        | What we changed                                              |        GHE         |                  Topology                  |  RSA  |
+| :------------------------------- | :----------------------------------------------------------- | :----------------: | :----------------------------------------: | :---: |
+| **Grid baseline** (6 seeds)      | Nothing &mdash; control condition                            | 0.329&plusmn;0.027 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.982 |
+| **Line arrangement**             | Blobs start in a line instead of scattered                   |       0.288        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.982 |
+| **Scatter arrangement**          | Blobs start at random positions                              |       0.334        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.980 |
+| **Circle arrangement**           | Blobs start in a ring                                        |       0.394        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.978 |
+| **No count signal**              | Masked the count from observations                           | 0.336&plusmn;0.091 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
+| **No slots + no count**          | Masked both grid assignments and count                       | 0.344&plusmn;0.045 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
+| **Shuffled + starved**           | Scrambled blob identities every frame, masked grid and count | 0.367&plusmn;0.081 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.985 |
+| **Random projection** (3 seeds)  | Multiplied observations by a random orthogonal matrix        | 0.326&plusmn;0.063 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.983 |
+| **Random permutation** (3 seeds) | Shuffled the order of observation dimensions                 | 0.346&plusmn;0.052 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.981 |
+| **LSTM**                         | Replaced DreamerV3 with a simple LSTM                        |       0.379        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.980 |
+| **Embodied agent**               | Agent learns to steer and gather autonomously                |       0.443        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.806 |
+| **Multi-dim D=2**                | Gathering in 2D (mixed training across 2D-5D)                |       0.439        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.943 |
+| **Multi-dim D=3**                | Gathering in 3D                                              |       0.325        | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.954 |
 
 The manifold is not an accident. It's the natural representation for a system that needs to predict what happens when objects are gathered one at a time.
 
@@ -61,16 +62,14 @@ This was the most unexpected finding of the project.
 
 We multiplied the 82-dimensional observation vector by a random orthogonal matrix before feeding it to the model. This preserves all pairwise distances between observations (it's a rotation in high-dimensional space) but destroys all spatial semantics &mdash; dimension 1 is no longer "bot x-position," it's a meaningless blend of everything.
 
-The model should have performed identically. Information theory says the task is the same. Instead:
-
 **The random projection model performed dramatically better at real-time count tracking.**
 
-| Metric | Baseline | Random Projection |
-|:---|:---:|:---:|
-| GHE (manifold quality) | 0.329 | 0.326 |
-| Probe SNR (signal-to-noise) | 502 | 825 |
-| Live probe accuracy | 56% exact | 99% exact |
-| PaCMAP R&sup2; (multi-scale structure) | 0.651 | 0.976 |
+| Metric                                 | Baseline  | Random Projection |
+| :------------------------------------- | :-------: | :---------------: |
+| GHE (manifold quality)                 |   0.329   |       0.326       |
+| Probe SNR (signal-to-noise)            |    502    |        825        |
+| Live probe accuracy                    | 56% exact |     99% exact     |
+| PaCMAP R&sup2; (multi-scale structure) |   0.651   |       0.976       |
 
 The standard evaluation metrics (GHE, topology, RSA) showed no difference. They declared the two models equivalent. Only when we built a real-time visualization and watched the models actually predict did we discover the gap. The baseline model tracked counts with a noticeable wobble &mdash; it would lag behind transitions and oscillate between adjacent counts. The random projection model snapped to each count precisely.
 
@@ -106,7 +105,7 @@ We parameterized the world so the bot gathers blobs in 2D, 3D, 4D, or 5D space, 
 
 **The neurons are completely different.** Linear probe transfer between dimensionalities fails catastrophically (mean R&sup2; = -0.27). Hidden state anatomy reveals the model uses entirely different neurons to count in each dimensionality &mdash; dimension 503 for 2D, dimension 115 for 3D, dimension 188 for 4D, dimension 240 for 5D. Zero overlap in the top-20 counting dimensions across any pair.
 
-**The geometry is identical.** Gromov-Wasserstein distance (a metric that compares the *shape* of two manifolds without requiring point correspondence) reveals that the counting structures at different dimensionalities are geometrically indistinguishable &mdash; cross-dimensional GW distances (0.004) are actually *below* the self-comparison baseline (0.010). The model builds the same ruler in different corners of its hidden state.
+**The geometry is identical.** Gromov-Wasserstein distance (a metric that compares the _shape_ of two manifolds without requiring point correspondence) reveals that the counting structures at different dimensionalities are geometrically indistinguishable &mdash; cross-dimensional GW distances (0.004) are actually _below_ the self-comparison baseline (0.010). The model builds the same ruler in different corners of its hidden state.
 
 The concept is dimension-invariant. The implementation is not.
 
@@ -114,28 +113,28 @@ The concept is dimension-invariant. The implementation is not.
 
 What does "+1" look like inside the model?
 
-We characterized the step vectors &mdash; the change in hidden state when count goes from *n* to *n*+1 &mdash; across the entire manifold. Key findings:
+We characterized the step vectors &mdash; the change in hidden state when count goes from _n_ to _n_+1 &mdash; across the entire manifold. Key findings:
 
 - **It's not a single direction.** The +1 operation rotates through 512-dimensional space, requiring 11 principal components to capture 90% of its variance. The step from 0&rarr;1 and the step from 24&rarr;25 point in nearly opposite directions (cosine similarity near zero).
-- **But the step sizes are uniform.** Despite rotating through high-dimensional space, every +1 step covers the same geodesic distance. The manifold has constant speed but varying curvature &mdash; like a road that turns but maintains a steady 60 mph.
-- **The model anticipates.** The hidden state begins shifting toward the next count 2-50 timesteps *before* a blob actually lands on the grid. The anticipation interval is proportional to the blob's travel distance. The model predicts counting events before they happen.
+- **But the step sizes are uniform.** Despite rotating through high-dimensional space, every +1 step covers the same geodesic distance. The manifold has constant speed but varying curvature.
+- **The model anticipates.** The hidden state begins shifting toward the next count 2-50 timesteps _before_ a blob actually lands on the grid. The anticipation interval is proportional to the blob's travel distance. The model predicts counting events before they happen.
 - **The prior knows the count.** The model's internal prediction (before seeing the current observation) achieves R&sup2;=0.956 on count. The counting manifold lives in the recurrent dynamics &mdash; the model's accumulated memory &mdash; not in the current observation. The observation barely adds information. The model has internalized counting so thoroughly that it rarely needs to check.
 
 ## The Measurement Battery
 
 Standard metrics missed important differences between our models. We built a comprehensive toolkit:
 
-| Tool | What it measures | What it found |
-|:---|:---|:---|
-| **Persistent homology** | Topological structure (Betti numbers) | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 in every condition tested |
-| **Geodesic Homogeneity Error** | Uniformity of successor spacing | GHE<0.5 in all conditions; replaced Euclidean HE which was measuring curvature, not error |
-| **Representational Similarity Analysis** | Ordinal structure preservation | RSA>0.97 consistently |
-| **Probe SNR** | Linear decodability quality | Revealed 56% vs 99% accuracy gap invisible to all other metrics |
-| **PaCMAP / TriMap R&sup2;** | Multi-scale projection fidelity | PaCMAP R&sup2;: 0.651 (baseline) vs 0.976 (random projection) |
-| **Gromov-Wasserstein distance** | Cross-condition geometry comparison | Proved identical geometry in disjoint subspaces |
-| **Hidden state anatomy** | Per-dimension counting contribution | 1-4 dims carry 95% of counting signal; completely different dims per condition |
-| **Transition detectors** | Temporal dynamics at count changes | 100+ dimensions respond per transition; anticipation precedes blob landing |
-| **Prior vs posterior** | Causal prediction analysis | R&sup2;=0.956 from recurrent state alone |
+| Tool                                     | What it measures                      | What it found                                                                             |
+| :--------------------------------------- | :------------------------------------ | :---------------------------------------------------------------------------------------- |
+| **Persistent homology**                  | Topological structure (Betti numbers) | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 in every condition tested                      |
+| **Geodesic Homogeneity Error**           | Uniformity of successor spacing       | GHE<0.5 in all conditions; replaced Euclidean HE which was measuring curvature, not error |
+| **Representational Similarity Analysis** | Ordinal structure preservation        | RSA>0.97 consistently                                                                     |
+| **Probe SNR**                            | Linear decodability quality           | Revealed 56% vs 99% accuracy gap invisible to all other metrics                           |
+| **PaCMAP / TriMap R&sup2;**              | Multi-scale projection fidelity       | PaCMAP R&sup2;: 0.651 (baseline) vs 0.976 (random projection)                             |
+| **Gromov-Wasserstein distance**          | Cross-condition geometry comparison   | Proved identical geometry in disjoint subspaces                                           |
+| **Hidden state anatomy**                 | Per-dimension counting contribution   | 1-4 dims carry 95% of counting signal; completely different dims per condition            |
+| **Transition detectors**                 | Temporal dynamics at count changes    | 100+ dimensions respond per transition; anticipation precedes blob landing                |
+| **Prior vs posterior**                   | Causal prediction analysis            | R&sup2;=0.956 from recurrent state alone                                                  |
 
 The probe SNR finding &mdash; where a transformation that doesn't change standard metrics dramatically improves practical performance &mdash; is, to our knowledge, undocumented in the representation learning literature.
 
@@ -170,7 +169,7 @@ Controls: Space (play/pause), arrows (step/jump), mouse drag (rotate 3D), D (dim
 ### Requirements
 
 ```bash
-pip install -r requirements.txt
+pip install -r relike aquirements.txt
 ```
 
 ### Training a model (GPU recommended, ~4 hours on RTX 4090)
@@ -253,19 +252,19 @@ We believe this style of collaboration &mdash; where AI handles implementation a
 
 **Hafner et al. (2023)** &mdash; [Mastering Diverse Domains through World Models](https://arxiv.org/abs/2301.04104). DreamerV3. The world-model architecture this project builds on. DreamerV3 learns by building an internal simulation of its environment and practicing inside that simulation. It achieved human-level performance across dozens of games without changing any settings. We used it because it's small enough to analyze completely (~12M parameters) while being powerful enough to learn complex behavior.
 
-**Dehaene (2011)** &mdash; *The Number Sense*. The foundational book on how brains represent number. Dehaene's work established that humans and many animals have an innate approximate number system &mdash; a mental number line where larger numbers are more compressed (Weber-Fechner law). Our model develops a number line too, but with uniform spacing rather than logarithmic compression, suggesting a different origin (discrete gathering vs. approximate estimation).
+**Dehaene (2011)** &mdash; _The Number Sense_. The foundational book on how brains represent number. Dehaene's work established that humans and many animals have an innate approximate number system &mdash; a mental number line where larger numbers are more compressed (Weber-Fechner law). Our model develops a number line too, but with uniform spacing rather than logarithmic compression, suggesting a different origin (discrete gathering vs. approximate estimation).
 
-**Lakoff & N&uacute;&ntilde;ez (2000)** &mdash; *Where Mathematics Comes From*. The argument that mathematical concepts are grounded in physical experience and metaphor, not Platonic abstraction. Our finding that counting emerges from gathering &mdash; without any mathematical instruction &mdash; provides computational evidence for this view.
+**Lakoff & N&uacute;&ntilde;ez (2000)** &mdash; _Where Mathematics Comes From_. The argument that mathematical concepts are grounded in physical experience and metaphor, not Platonic abstraction. Our finding that counting emerges from gathering &mdash; without any mathematical instruction &mdash; provides computational evidence for this view.
 
 **Nieder & Dehaene (2009)** &mdash; [Representation of Number in the Brain](https://doi.org/10.1146/annurev.neuro.051508.135550). Comprehensive review of how neurons in prefrontal and parietal cortex encode number. Individual neurons show tuned responses to specific numerosities, with tuning curves that overlap (similar to our probe histograms). Our model's hidden state dimensions show analogous tuning.
 
 **Whittington et al. (2020)** &mdash; [The Tolman-Eichenbaum Machine](https://doi.org/10.1016/j.cell.2020.10.024). Shows how hippocampal-entorhinal circuits learn relational structure. Relevant because our model's counting manifold is a kind of cognitive map &mdash; a structured internal representation of an abstract relationship (numerical order), learned from experience.
 
-**Churchland et al. (2012)** &mdash; [Neural Population Dynamics During Reaching](https://doi.org/10.1038/nature11129). Introduced jPCA for finding rotational dynamics in neural populations. We applied jPCA to our model's hidden states and found the counting manifold is *not* rotational (rotation fraction = -0.14), confirming it's fundamentally different from motor cortex dynamics.
+**Churchland et al. (2012)** &mdash; [Neural Population Dynamics During Reaching](https://doi.org/10.1038/nature11129). Introduced jPCA for finding rotational dynamics in neural populations. We applied jPCA to our model's hidden states and found the counting manifold is _not_ rotational (rotation fraction = -0.14), confirming it's fundamentally different from motor cortex dynamics.
 
-**M&eacute;moli (2011)** &mdash; [Gromov-Wasserstein Distances and the Metric Approach to Object Matching](https://doi.org/10.1007/s10208-011-9093-5). The mathematical framework behind our cross-dimensional geometry comparison. Gromov-Wasserstein distance compares the *shape* of two metric spaces without requiring point-to-point correspondence. This is how we proved the counting manifolds at different dimensionalities are geometrically identical despite using completely different neurons.
+**M&eacute;moli (2011)** &mdash; [Gromov-Wasserstein Distances and the Metric Approach to Object Matching](https://doi.org/10.1007/s10208-011-9093-5). The mathematical framework behind our cross-dimensional geometry comparison. Gromov-Wasserstein distance compares the _shape_ of two metric spaces without requiring point-to-point correspondence. This is how we proved the counting manifolds at different dimensionalities are geometrically identical despite using completely different neurons.
 
-**Edelsbrunner & Harer (2010)** &mdash; *Computational Topology*. The textbook on persistent homology, the tool we use to verify that the counting manifold has the topology of a line (&beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0). Persistent homology tracks how topological features (connected components, loops, voids) appear and disappear as you vary a scale parameter.
+**Edelsbrunner & Harer (2010)** &mdash; _Computational Topology_. The textbook on persistent homology, the tool we use to verify that the counting manifold has the topology of a line (&beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0). Persistent homology tracks how topological features (connected components, loops, voids) appear and disappear as you vary a scale parameter.
 
 **Kriegeskorte et al. (2008)** &mdash; [Representational Similarity Analysis](https://doi.org/10.3389/neuro.06.004.2008). The framework for comparing representational geometry across systems. RSA compares distance matrices rather than individual representations, making it possible to ask "do these two systems organize information the same way?" We use it to confirm ordinal structure preservation.
 
@@ -275,7 +274,7 @@ We believe this style of collaboration &mdash; where AI handles implementation a
 
 **Spelke (2000)** &mdash; [Core Knowledge](https://doi.org/10.1037/0003-066X.55.11.1233). Elizabeth Spelke's theory that humans are born with core knowledge systems for objects, number, space, and agents. Our model's ability to develop numerical structure from pure observation parallels the idea of a core number system &mdash; though our model builds it from experience rather than having it innately.
 
-**Kim & Mnih (2018)** &mdash; [Disentangled Representations](https://arxiv.org/abs/1802.04942). Work on learning factorized representations where different factors of variation are separated. Our random projection finding is relevant: the scrambled model achieves better factorization (count signal cleanly separated from spatial noise) than the baseline, suggesting that input structure can *hinder* disentanglement.
+**Kim & Mnih (2018)** &mdash; [Disentangled Representations](https://arxiv.org/abs/1802.04942). Work on learning factorized representations where different factors of variation are separated. Our random projection finding is relevant: the scrambled model achieves better factorization (count signal cleanly separated from spatial noise) than the baseline, suggesting that input structure can _hinder_ disentanglement.
 
 **Saxe et al. (2019)** &mdash; [A Mathematical Theory of Semantic Development](https://doi.org/10.1073/pnas.1820226116). Shows how neural networks can develop structured internal representations through learning. Provides theoretical grounding for why a next-state prediction objective leads to semantically meaningful representations.
 
@@ -283,6 +282,6 @@ We believe this style of collaboration &mdash; where AI handles implementation a
 
 ---
 
-*This project was built with [Claude Code](https://claude.ai/code) as the primary implementation agent.*
+_This project was built with [Claude Code](https://claude.ai/code) as the primary implementation agent._
 
-*Counting, it appears, is not taught. It is gathered.*
+_Counting, it appears, is not taught. It is gathered._
