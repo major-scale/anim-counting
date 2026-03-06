@@ -118,11 +118,9 @@ We characterized the step vectors &mdash; the change in hidden state when count 
 - **It's not a single direction.** The +1 operation rotates through 512-dimensional space, requiring 11 principal components to capture 90% of its variance. The step from 0&rarr;1 and the step from 24&rarr;25 point in nearly opposite directions (cosine similarity near zero).
 - **But the step sizes are uniform.** Despite rotating through high-dimensional space, every +1 step covers the same geodesic distance. The manifold has constant speed but varying curvature.
 - **The model anticipates.** The hidden state begins shifting toward the next count 2-50 timesteps _before_ a blob actually lands on the grid. The anticipation interval is proportional to the blob's travel distance. The model predicts counting events before they happen.
-- **The prior knows the count.** The model's internal prediction (before seeing the current observation) achieves R&sup2;=0.956 on count. The counting manifold lives in the recurrent dynamics &mdash; the model's accumulated memory &mdash; not in the current observation. The observation barely adds information. The model has internalized counting so thoroughly that it rarely needs to check.
+- **The prior knows the count.** The model's internal prediction (before seeing the current observation) achieves R&sup2;=0.956 on count. The counting manifold lives in the recurrent dynamics &mdash; the model's accumulated memory &mdash; not in the current observation. The observation barely adds information. The model has internalized counting so thoroughly that the observation mostly serves as confirmation.
 
 ## The Measurement Battery
-
-Standard metrics missed important differences between our models. We built a comprehensive toolkit:
 
 | Tool                                     | What it measures                      | What it found                                                                             |
 | :--------------------------------------- | :------------------------------------ | :---------------------------------------------------------------------------------------- |
@@ -136,17 +134,33 @@ Standard metrics missed important differences between our models. We built a com
 | **Transition detectors**                 | Temporal dynamics at count changes    | 100+ dimensions respond per transition; anticipation precedes blob landing                |
 | **Prior vs posterior**                   | Causal prediction analysis            | R&sup2;=0.956 from recurrent state alone                                                  |
 
-The probe SNR finding &mdash; where a transformation that doesn't change standard metrics dramatically improves practical performance &mdash; is, to our knowledge, undocumented in the representation learning literature.
-
 ## Interactive Visualization
 
-The repository includes an interactive synchronized visualization:
+### Real-Time GUI (best model, 99%+ accuracy)
 
-- **Left panel**: The 2D counting world &mdash; bot gathering blobs in real time
-- **Right panel**: The model's 512-dimensional hidden state projected onto three semantically meaningful axes:
-  - **Count axis**: The probe direction &mdash; position along this axis is the model's count estimate
-  - **Spatial axis**: Within-count variance &mdash; how the representation differs at the same count with different blob arrangements
-  - **Transition axis**: Velocity at count changes &mdash; the magnitude of the whole-network response when a blob lands
+```bash
+cd scripts && python3 visualize_counting.py \
+  --models-dir ../models/randproj_clean --randproj
+```
+
+Runs the randproj model (our best) through the counting environment in real time, showing the 2D world alongside the model's 512-dim hidden state projected onto the counting manifold. The linear probe achieves **99%+ exact match** during the gathering phase.
+
+Other modes:
+
+```bash
+# Baseline model (~85-90% accuracy)
+python3 visualize_counting.py
+
+# Embodied agent with heuristic steering
+python3 visualize_counting.py --embodied
+
+# Multi-dimensional gathering (D=2,3,5,10)
+python3 visualize_counting.py --multidim 3
+```
+
+### Educational Episode Viewer
+
+The repository also includes a step-through visualization with prior/posterior comparison:
 
 ```bash
 cd scripts
@@ -159,10 +173,6 @@ Controls: Space (play/pause), arrows (step/jump), mouse drag (rotate 3D), D (dim
 ## What It Means
 
 **For cognitive science.** Numerical structure can emerge from physical experience alone, without symbols, language, or instruction. This supports embodied theories of mathematical cognition &mdash; the idea that number concepts are grounded in bodily interaction with the world, not in abstract symbol manipulation. The model develops what looks like a rudimentary [approximate number system](https://en.wikipedia.org/wiki/Approximate_number_system) purely from the dynamics of gathering.
-
-**For AI.** World models develop geometrically precise internal representations that standard evaluation tools miss. The gap between our baseline and random projection models was invisible to every standard metric. Only building a real-time demo, watching it run, and then developing a new metric (probe SNR) revealed the difference. Multi-scale measurement matters. Watching your model matters.
-
-**For the future.** Counting is the first step. If a model can develop number from gathering, it should be able to develop classification from sorting, conservation from pouring, addition from combining, and subtraction from removing. Each concept should produce a distinct geometric signature in the hidden state. The measurement tools are built. The architecture works. The curriculum is mapped.
 
 ## Reproducing Key Results
 
@@ -242,11 +252,7 @@ anim-counting/
 
 ## Acknowledgments
 
-This project was built by **major-scale** and **Claude** (Anthropic) working together. Claude served as the primary implementation agent &mdash; writing code, designing experiments, running evaluations, building analysis tools, and debugging the many things that went wrong along the way. major-scale provided the vision, the research direction, the critical judgment calls, and the "that doesn't look right" intuitions that repeatedly turned out to be correct.
-
-The experimental workflow was unusual: a human and an AI collaborating in real time on a research project, with the AI writing and running all the code while the human steered the investigation. The random projection finding &mdash; the most surprising result &mdash; came from major-scale watching a real-time demo and noticing something the metrics had missed. The multi-dimensional experiment came from major-scale asking "what if the world had more dimensions?" The successor analysis came from major-scale wanting to know what +1 actually looks like inside the model. The AI built the tools; the human asked the questions.
-
-We believe this style of collaboration &mdash; where AI handles implementation at scale while humans provide direction and judgment &mdash; will become increasingly common in research. This project is one example of what it looks like in practice.
+This project was built by **major-scale** and **Claude** (Anthropic) working together.
 
 ## References
 

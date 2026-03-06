@@ -211,6 +211,16 @@ def load_model_data(models_dir=None, randproj=False, explicit_dir=False) -> dict
         "centroid_labels": centroid_labels,    # (26,) count labels
     }
 
+    # Load Bayesian parameters if present in probe JSON
+    if "bayesian_gaussians" in probe:
+        result["bayesian_means"] = np.array(
+            [g["mean"] for g in probe["bayesian_gaussians"]], dtype=np.float64)
+        result["bayesian_stds"] = np.array(
+            [g["std"] for g in probe["bayesian_gaussians"]], dtype=np.float64)
+    if "bayesian_boundaries" in probe:
+        result["bayesian_boundaries"] = np.array(
+            probe["bayesian_boundaries"], dtype=np.float64)
+
     # Load training point cloud if available
     states_file = d / "baseline_states.npz"
     if states_file.exists():
@@ -541,6 +551,10 @@ def main():
                         help="Embodied mode: agent-controlled steering with heuristic policy")
     parser.add_argument("--multidim", type=int, default=None, metavar="D",
                         help="Multi-dim mode: use D-dimensional counting env (e.g. --multidim 2)")
+    parser.add_argument("--prediction", choices=["round", "bayes", "bayes+monotonic"],
+                        default="round",
+                        help="Prediction mode: round (default), bayes (Gaussian discriminant), "
+                             "bayes+monotonic (Bayesian + monotonicity during gathering)")
     args = parser.parse_args()
 
     # Override MODELS_DIR if specified
@@ -604,6 +618,19 @@ def main():
     probe_b = model_data["probe_bias"]
     centroid_matrix = model_data["centroid_matrix"]  # (26, 512)
     centroid_labels = model_data["centroid_labels"]  # (26,)
+
+    # Bayesian prediction parameters
+    bayes_means = model_data.get("bayesian_means")    # (26,) or None
+    bayes_stds = model_data.get("bayesian_stds")      # (26,) or None
+    prediction_mode = args.prediction
+    if prediction_mode != "round" and bayes_means is None:
+        print(f"WARNING: --prediction {prediction_mode} requires Bayesian parameters in "
+              f"embed_probe.json. Run bayesian_probe_optimizer.py --export-probe first. "
+              f"Falling back to 'round'.")
+        prediction_mode = "round"
+    if prediction_mode != "round":
+        print(f"  Prediction mode: {prediction_mode}")
+    prev_predicted = 0  # for monotonic mode
 
     # Coordinate transforms
     w2s, world_scale = make_world_transform()
@@ -672,6 +699,7 @@ def main():
                         rssm.reset()
                         trail.clear()
                         restart_countdown = 0
+                        prev_predicted = 0
 
         # Episode restart countdown
         if restart_countdown > 0:
@@ -680,6 +708,7 @@ def main():
                 obs = env.reset()
                 rssm.reset()
                 trail.clear()
+                prev_predicted = 0
                 episode += 1
                 episodes_done += 1
                 if episodes_done >= args.episodes:
@@ -714,7 +743,23 @@ def main():
 
             # Probe prediction
             raw_probe = float(deter @ probe_w + probe_b)
-            predicted = int(np.clip(np.round(raw_probe), 0, 25))
+            if prediction_mode == "round":
+                predicted = int(np.clip(np.round(raw_probe), 0, 25))
+            else:
+                # Bayesian: pick count c maximizing N(raw_probe; mu_c, sigma_c)
+                log_probs = -0.5 * ((raw_probe - bayes_means) / bayes_stds) ** 2 - np.log(bayes_stds)
+                predicted = int(np.argmax(log_probs))
+                if prediction_mode == "bayes+monotonic":
+                    _phase = env._state.phase
+                    _gathering = _phase in ("counting", "gathering")
+                    if _gathering:
+                        if predicted < prev_predicted:
+                            predicted = prev_predicted  # can't decrease during gathering
+                        elif predicted > prev_predicted + 1:
+                            predicted = prev_predicted + 1  # max +1 per step
+                    else:
+                        prev_predicted = 0  # reset at non-gathering phases
+                prev_predicted = predicted
             # Ground truth: from obs[81] for 2D envs, from state for multi-dim
             if multidim is not None:
                 gt = int(env._state.grid.filled_count)
