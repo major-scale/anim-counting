@@ -1,0 +1,25 @@
+# Core
+numpy>=1.24
+torch>=2.0
+scipy>=1.10
+
+# Environment
+gym>=0.26
+
+# Evaluation & analysis
+scikit-learn>=1.2
+ripser>=0.6          # Persistent homology
+persim>=0.3          # Persistence diagrams
+pot>=0.9             # Optimal transport (Gromov-Wasserstein)
+
+# Visualization
+matplotlib>=3.7
+pygame>=2.5
+pacmap>=0.7          # Multi-scale projection
+trimap>=1.1          # Multi-scale projection
+
+# Figures
+scienceplots>=2.1    # Publication style (optional)
+
+# Training (GPU)
+# dreamerv3 dependencies are bundled in cloud/

@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: "Anim: Counting Emerges from Gathering"
+message: "If you use this work, please cite it as below."
+type: software
+authors:
+  - ***REMOVED***
+name: major-scale
+  - name: Claude
+    affiliation: Anthropic
+repository-code: https://github.com/major-scale/anim-counting
+license: MIT
+date-released: 2026-03-06
+keywords:
+  - world models
+  - counting
+  - number sense
+  - DreamerV3
+  - representation learning
+  - emergent behavior
+  - embodied cognition
+  - persistent homology
+abstract: >-
+  An AI system develops a geometrically precise internal number line
+  purely from observing objects being gathered one at a time.
+  No counting objective, no reward signal, no mathematical instruction.
+  A DreamerV3 world model trained on next-state prediction
+  spontaneously organizes its 512-dimensional hidden state into a
+  1D manifold with correct topology, uniform spacing, and ordinal
+  structure, verified through persistent homology, geodesic analysis,
+  and representational similarity analysis. The counting manifold is
+  robust across spatial arrangements, information ablations,
+  observation scrambling, alternative architectures, and
+  higher-dimensional worlds.

@@ -2,10 +2,23 @@
 artifacts/checkpoints/
 artifacts/battery/
 artifacts/reports/*.png
+artifacts/figures/
+artifacts/episodes/
+artifacts/h_t_data/
+artifacts/tensors/
+artifacts/video/
+artifacts/plots/
+artifacts/analysis/
+artifacts/logs/
+artifacts/status/
+artifacts/paper/
 models/
 *.pt
 *.npy
 *.tar.gz
+
+# Keep figures/ for README (not in artifacts/)
+!figures/
 
 # Python
 __pycache__/
