@@ -1,0 +1,59 @@
+{
+  "description": "Multi-seed ablation results for 3 key conditions",
+  "timestamp": "2026-03-03T03:45:00Z",
+  "baseline_ghe": 0.327,
+  "baseline_mean_6seeds": 0.329,
+  "conditions": {
+    "no_count": {
+      "description": "Mask obs indices 80-81 (count scalars)",
+      "steps": 100000,
+      "seeds": {
+        "original": {"ghe": 0.440, "r2": 0.998, "rsa": 0.981, "beta0": 1, "beta1": 0},
+        "seed_7": {"ghe": 0.292, "r2": 0.998, "rsa": 0.979, "beta0": 1, "beta1": 0},
+        "seed_8": {"ghe": 0.277, "r2": 0.996, "rsa": 0.982, "beta0": 1, "beta1": 0}
+      },
+      "mean_ghe": 0.336,
+      "std_ghe": 0.091
+    },
+    "no_slots_no_count": {
+      "description": "Mask obs indices 53-77, 80-81 (slots + count)",
+      "steps": 200000,
+      "seeds": {
+        "original": {"ghe": 0.303, "r2": 0.997, "rsa": 0.981, "beta0": 1, "beta1": 0},
+        "seed_7": {"ghe": 0.336, "r2": 0.998, "rsa": 0.981, "beta0": 1, "beta1": 0},
+        "seed_8": {"ghe": 0.392, "r2": 0.995, "rsa": 0.981, "beta0": 1, "beta1": 0}
+      },
+      "mean_ghe": 0.344,
+      "std_ghe": 0.045
+    },
+    "shuffle_no_slots_no_count": {
+      "description": "Mask 53-77, 80-81 + random permutation of blob pairs each step",
+      "steps": 200000,
+      "seeds": {
+        "original": {"ghe": 0.317, "r2": 0.996, "rsa": 0.985, "beta0": 1, "beta1": 0},
+        "seed_7": {"ghe": 0.461, "r2": 0.996, "rsa": 0.981, "beta0": 1, "beta1": 0},
+        "seed_8": {"ghe": 0.324, "r2": 0.998, "rsa": 0.988, "beta0": 1, "beta1": 0}
+      },
+      "mean_ghe": 0.367,
+      "std_ghe": 0.081
+    }
+  },
+  "untrained_baseline": {
+    "description": "Random weights DreamerV3 observing trained agent's episode stream",
+    "ghe": 0.395,
+    "r2": 0.985,
+    "rsa": 0.591,
+    "pca_pc1": 0.230,
+    "beta0": 1,
+    "beta1": 0,
+    "n_timesteps": 117212
+  },
+  "trained_same_observations": {
+    "ghe": 0.281,
+    "r2": 0.998,
+    "rsa": 0.982,
+    "pca_pc1": 0.730,
+    "beta0": 1,
+    "beta1": 0
+  }
+}

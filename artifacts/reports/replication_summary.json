@@ -1,0 +1,73 @@
+{
+  "seeds": {
+    "seed_0": {
+      "seed": 0,
+      "steps": 300000,
+      "location": "Mac MPS",
+      "ghe": 0.327,
+      "he": null,
+      "arc_length_r2": 0.998,
+      "beta_0": 1,
+      "beta_1": 0,
+      "rsa_spearman": 0.984
+    },
+    "seed_1": {
+      "seed": 1,
+      "steps": 155000,
+      "location": "Mac MPS (early-stopped)",
+      "ghe": 0.331,
+      "he": 12.6,
+      "arc_length_r2": 0.997,
+      "beta_0": 1,
+      "beta_1": 0,
+      "rsa_spearman": 0.978
+    },
+    "seed_3": {
+      "seed": 3,
+      "steps": 211067,
+      "location": "RunPod RTX 4090",
+      "ghe": 0.374,
+      "he": 14.62,
+      "arc_length_r2": 0.996,
+      "beta_0": 1,
+      "beta_1": 0,
+      "rsa_spearman": 0.975
+    },
+    "seed_4": {
+      "seed": 4,
+      "steps": 214907,
+      "location": "RunPod RTX 4090",
+      "ghe": 0.288,
+      "he": 13.2,
+      "arc_length_r2": 0.998,
+      "beta_0": 1,
+      "beta_1": 0,
+      "rsa_spearman": 0.983
+    },
+    "seed_5": {
+      "seed": 5,
+      "steps": 50000,
+      "location": "RunPod RTX 4090",
+      "ghe": 0.324,
+      "he": 10.81,
+      "arc_length_r2": 0.995,
+      "beta_0": 1,
+      "beta_1": 0,
+      "rsa_spearman": 0.984
+    }
+  },
+  "summary": {
+    "n_seeds": 5,
+    "ghe_mean": 0.32880000000000004,
+    "ghe_std": 0.02734520067580416,
+    "ghe_min": 0.288,
+    "ghe_max": 0.374,
+    "r2_mean": 0.9968,
+    "rsa_mean": 0.9808,
+    "topology_unanimous": true,
+    "all_below_threshold": true,
+    "pending": [
+      "seed_2 (Mac, in progress)"
+    ]
+  }
+}
