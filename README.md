@@ -4,7 +4,7 @@
 
 No symbols. No language. No math instruction. Just the physical experience of gathering objects, one at a time.
 
-We built a simple 2D world where a bot picks up blobs and places them on a grid. A [DreamerV3](https://arxiv.org/abs/2301.04104) world model watches and tries to predict what happens next. It's never told about numbers. It's never rewarded for counting. It just watches.
+We built a simple 2D world where a bot picks up blobs and places them on a grid. A [DreamerV3](https://arxiv.org/abs/2301.04104) world model watches and tries to predict what happens next. It receives no symbolic numerical instruction &mdash; no number labels, no counting curriculum, no concept of "how many." It just learns to predict what the world will look like one step from now.
 
 Inside the model's 512-dimensional hidden state, a **number line emerges**.
 
@@ -21,7 +21,7 @@ The counting manifold is not fragile. It's an attractor. Every condition we test
 
 The counting world is deliberately simple. A 2D field contains 25 colored blobs. A bot navigates to each blob, picks it up, and carries it to a 5&times;5 grid. The environment exposes an 82-dimensional observation vector: the bot's position, all blob positions, which grid slots are filled, and a raw count of filled slots.
 
-A DreamerV3 world model (~12 million parameters) observes the bot's behavior and learns to predict what the environment will look like next. The model is trained purely on next-state prediction &mdash; there is no counting objective, no classification loss, no reward signal related to number. The model's only job is to simulate what happens next.
+A DreamerV3 world model (~12 million parameters) observes the bot's behavior and learns to predict what the environment will look like next. The world model is trained on next-state prediction &mdash; its job is to simulate what happens next. The count appears as one element in the 82-dimensional observation, but the model receives no explicit counting loss, no number labels, and no symbolic instruction about what numbers are or how they work. Any numerical structure in the hidden state emerges from the model's need to predict the world accurately.
 
 We then examine the model's internal representations. DreamerV3 uses a Recurrent State-Space Model (RSSM) with a 512-dimensional deterministic hidden state that accumulates information over time. We analyze the geometry of this hidden state to ask: did the model learn to count?
 
