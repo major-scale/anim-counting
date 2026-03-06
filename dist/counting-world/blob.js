@@ -65,6 +65,11 @@ export function generateBlobField(config = {}) {
             isCarried: false,
             carriedBy: null,
             placedPosition: null,
+            fieldPosition: { ...candidate },
+            gridSlot: null,
+            animatingTo: null,
+            animatingFrom: null,
+            animProgress: 0,
             markGlow: 0,
             countFlash: 0,
             countFlashColor: "#ffffff",
@@ -110,10 +115,40 @@ export function unmarkBlob(blob, botId) {
     return true;
 }
 /**
+ * Ease-out cubic: fast start, gentle landing.
+ */
+export function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+/**
+ * Start a blob sliding toward a target position.
+ */
+export function startBlobTransition(blob, target) {
+    blob.animatingFrom = { ...blob.position };
+    blob.animatingTo = { ...target };
+    blob.animProgress = 0;
+}
+/**
  * Update blob animation state each frame.
  */
 export function updateBlobAnimations(blobs, dt) {
+    const ANIM_SPEED = 0.008; // ~125 frames at dt=1 → ~2s slide
     for (const blob of blobs) {
+        // Position transition animation
+        if (blob.animatingTo && blob.animatingFrom) {
+            blob.animProgress = Math.min(1, blob.animProgress + ANIM_SPEED * dt);
+            const t = easeOutCubic(blob.animProgress);
+            blob.position = {
+                x: blob.animatingFrom.x + (blob.animatingTo.x - blob.animatingFrom.x) * t,
+                y: blob.animatingFrom.y + (blob.animatingTo.y - blob.animatingFrom.y) * t,
+            };
+            if (blob.animProgress >= 1) {
+                blob.position = { ...blob.animatingTo };
+                blob.animatingTo = null;
+                blob.animatingFrom = null;
+                blob.animProgress = 0;
+            }
+        }
         // Count flash decays
         if (blob.countFlash > 0) {
             blob.countFlash = Math.max(0, blob.countFlash - 0.04 * dt);
@@ -172,6 +207,11 @@ export function resetBlobField(field) {
         blob.isCarried = false;
         blob.carriedBy = null;
         blob.placedPosition = null;
+        blob.position = { ...blob.fieldPosition };
+        blob.gridSlot = null;
+        blob.animatingTo = null;
+        blob.animatingFrom = null;
+        blob.animProgress = 0;
         blob.markGlow = 0;
         blob.countFlash = 0;
     }

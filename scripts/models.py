@@ -1,10 +1,16 @@
 import copy
+import os
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 import networks
 import tools
+
+# Zero out action input to RSSM during training — the counting world bot is
+# hardcoded (always action=0), so the action channel is pure noise.
+# Controlled by env var so we can train both ways.
+ZERO_ACTION = os.environ.get("DREAMER_ZERO_ACTION", "").lower() in ("1", "true", "yes")
 
 to_np = lambda x: x.detach().cpu().numpy()
 
@@ -31,12 +37,12 @@ class DisplacementLoss(nn.Module):
     """Auxiliary loss pressuring RSSM to encode +1/-1 transitions as consistent
     displacement vectors in latent (deter) space.
 
-    Observations layout: indices 53..77 (25 slots) are one-hot mark indicators.
-    A +1 transition means the total mark count increased by 1 between t and t+1.
+    Grid env: obs[81] is grid_filled_raw (integer count of blobs in grid).
+    A +1 transition means grid_filled increased by 1 between t and t+1.
+    A -1 transition means grid_filled decreased by 1 (uncount phase).
     """
 
-    MARK_START = 53  # obs vector indices for mark slots
-    MARK_END = 78    # exclusive
+    GRID_FILLED_RAW_IDX = 81  # obs vector index for raw grid filled count
 
     def __init__(self, deter_dim, ema_decay=0.99, warmup_batches=50, device="cpu"):
         super().__init__()
@@ -61,9 +67,8 @@ class DisplacementLoss(nn.Module):
         B, T, D = post_deter.shape
         device = post_deter.device
 
-        # --- Extract mark counts ---
-        marks = obs_vector[:, :, self.MARK_START:self.MARK_END]  # (B, T, 25)
-        counts = marks.sum(dim=-1)  # (B, T) — total marks at each timestep
+        # --- Extract grid filled count ---
+        counts = obs_vector[:, :, self.GRID_FILLED_RAW_IDX]  # (B, T) — raw integer grid count
         deltas = counts[:, 1:] - counts[:, :-1]  # (B, T-1)
 
         # --- Mask episode boundaries ---
@@ -277,8 +282,9 @@ class WorldModel(nn.Module):
         with tools.RequiresGrad(self):
             with torch.cuda.amp.autocast(self._use_amp):
                 embed = self.encoder(data)
+                action_input = torch.zeros_like(data["action"]) if ZERO_ACTION else data["action"]
                 post, prior = self.dynamics.observe(
-                    embed, data["action"], data["is_first"]
+                    embed, action_input, data["is_first"]
                 )
                 kl_free = self._config.kl_free
                 dyn_scale = self._config.dyn_scale
@@ -369,15 +375,16 @@ class WorldModel(nn.Module):
         data = self.preprocess(data)
         embed = self.encoder(data)
 
+        vid_action = torch.zeros_like(data["action"]) if ZERO_ACTION else data["action"]
         states, _ = self.dynamics.observe(
-            embed[:6, :5], data["action"][:6, :5], data["is_first"][:6, :5]
+            embed[:6, :5], vid_action[:6, :5], data["is_first"][:6, :5]
         )
         recon = self.heads["decoder"](self.dynamics.get_feat(states))["image"].mode()[
             :6
         ]
         reward_post = self.heads["reward"](self.dynamics.get_feat(states)).mode()[:6]
         init = {k: v[:, -1] for k, v in states.items()}
-        prior = self.dynamics.imagine_with_action(data["action"][:6, 5:], init)
+        prior = self.dynamics.imagine_with_action(vid_action[:6, 5:], init)
         openl = self.heads["decoder"](self.dynamics.get_feat(prior))["image"].mode()
         reward_prior = self.heads["reward"](self.dynamics.get_feat(prior)).mode()
         # observed image is given until 5 steps

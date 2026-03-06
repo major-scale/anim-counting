@@ -12,20 +12,15 @@ import gym
 import gym.spaces
 import numpy as np
 
-# Pure Python env (no Node.js subprocess, ~100x faster)
-# Set COUNTING_USE_NODEJS=1 to fall back to Node.js bridge for equivalence testing
-if os.environ.get("COUNTING_USE_NODEJS", "0") == "1":
-    from counting_env import CountingWorldEnv, OBS_SIZE
-else:
-    from counting_env_pure import CountingWorldEnv, OBS_SIZE
+sys.path.insert(0, "~/anim-training/env")
+from counting_env import CountingWorldEnv, OBS_SIZE
 
 _DEFAULT_BLOB_MIN = 3
 _DEFAULT_BLOB_MAX = 25
 
-# Observation layout for shaping reward (25-blob layout, OBS_SIZE=82)
-# Grid slot assignments at indices 53-77 (normalized slot index if gridded, 0 if in field)
-# Grid filled count raw at index 81
-_GRID_FILLED_RAW_IDX = 81
+# Observation layout for shaping reward (25-blob layout, OBS_SIZE=80)
+_MARK_START = 53
+_MARK_END = 78
 
 
 class CountingWorld:
@@ -40,35 +35,13 @@ class CountingWorld:
 
         self._blob_min = int(os.environ.get("COUNTING_BLOB_MIN", _DEFAULT_BLOB_MIN))
         self._blob_max = int(os.environ.get("COUNTING_BLOB_MAX", _DEFAULT_BLOB_MAX))
-        bidir_env = os.environ.get("COUNTING_BIDIRECTIONAL", "false")
-        bidirectional = bidir_env.lower() in ("true", "1", "yes")
-        max_steps = int(os.environ.get("COUNTING_MAX_STEPS", kwargs.get("max_steps", 5000)))
-
-        target_arrangement = os.environ.get("COUNTING_ARRANGEMENT", "grid")
-        mask_count_env = os.environ.get("COUNTING_MASK_COUNT", "false")
-        mask_count = mask_count_env.lower() in ("true", "1", "yes")
-        mask_slots_env = os.environ.get("COUNTING_MASK_SLOTS", "false")
-        mask_slots = mask_slots_env.lower() in ("true", "1", "yes")
-        shuffle_blobs_env = os.environ.get("COUNTING_SHUFFLE_BLOBS", "false")
-        shuffle_blobs = shuffle_blobs_env.lower() in ("true", "1", "yes")
-        random_project_env = os.environ.get("COUNTING_RANDOM_PROJECT", "false")
-        random_project = random_project_env.lower() in ("true", "1", "yes")
-        random_permute_env = os.environ.get("COUNTING_RANDOM_PERMUTE", "false")
-        random_permute = random_permute_env.lower() in ("true", "1", "yes")
 
         self._env = CountingWorldEnv(
             stage=int(os.environ.get("COUNTING_STAGE", "1")),
             conservation=conservation,
             blob_count_min=self._blob_min,
             blob_count_max=self._blob_max,
-            max_steps=max_steps,
-            bidirectional=bidirectional,
-            target_arrangement=target_arrangement,
-            mask_count=mask_count,
-            mask_slots=mask_slots,
-            shuffle_blobs=shuffle_blobs,
-            random_project=random_project,
-            random_permute=random_permute,
+            max_steps=kwargs.get("max_steps", 5000),
         )
         self._seed = seed
         self.reward_range = [-np.inf, np.inf]
@@ -109,11 +82,10 @@ class CountingWorld:
         obs_flat, reward, done, info = self._env.step(tally)
 
         # Distance-based shaping reward using raw continuous prediction
-        # Read grid_filled from env state directly (not obs vector) so it works
-        # correctly even when obs indices 80-81 are masked for ablation
-        grid_filled = self._env._state.grid.filled_count if self._env._state else 0
+        # (or discrete tally if in discrete mode)
+        marked_so_far = int(np.sum(obs_flat[_MARK_START:_MARK_END]))
         pred_for_reward = raw_prediction if raw_prediction is not None else float(tally)
-        error = abs(pred_for_reward - grid_filled)
+        error = abs(pred_for_reward - marked_so_far)
         reward += 1.0 - 0.25 * error
 
         # Store extra info for logging

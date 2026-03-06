@@ -4,7 +4,7 @@ Counting World Gymnasium Environment
 A gym.Env wrapper around the headless TypeScript counting world simulation.
 Communicates with a Node.js subprocess via stdin/stdout JSON lines.
 
-Observation: Box(80,) float32 — bot position, blob positions (25 slots), mark status, count, phase
+Observation: Box(82,) float32 — bot position, blob positions (25 slots), grid slot assignments, count, phase, grid filled
 Action: Discrete(25) — predicted tally (0-24), only meaningful when phase=1
 
 Compatible with gym 0.26.x (old API) as required by NM512/dreamerv3-torch.
@@ -29,7 +29,7 @@ _BRIDGE_SCRIPT = Path(os.environ.get(
     str(Path.home() / "anim-training" / "env" / "dist" / "bridge.js"),
 ))
 
-OBS_SIZE = 80
+OBS_SIZE = 82
 MAX_TALLY = 25  # Discrete action space: predict 0..24
 
 
@@ -59,8 +59,8 @@ class CountingWorldEnv(gym.Env):
         self.max_steps = kwargs.get("max_steps", 5000)
         self.bidirectional = kwargs.get("bidirectional", False)
 
-        # Observation: 80 float values
-        # Positions normalized to [0,1], marks are 0/1, count is raw int, phase 0/1
+        # Observation: 82 float values
+        # Positions normalized to [0,1], grid slots normalized, count, phase, grid filled
         self.observation_space = gym.spaces.Box(
             low=0.0,
             high=float(self.blob_count_max),  # blob count can be up to max

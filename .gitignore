@@ -1,0 +1,22 @@
+# Large binary artifacts
+artifacts/checkpoints/
+artifacts/battery/
+artifacts/reports/*.png
+models/
+*.pt
+*.npy
+*.tar.gz
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Environment
+.env
+
+# Job queue (ephemeral)
+queue/
+
+# Sync staging (ephemeral)
+sync/

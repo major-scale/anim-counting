@@ -36,7 +36,7 @@ ALLOWED_COMMANDS = {
     },
     "eval_dump": {
         "script": "eval_dump.py",
-        "cwd": str(PROJECT_DIR),
+        "cwd": str(SCRIPTS_DIR),
         "default_timeout": 3600,
     },
 }
