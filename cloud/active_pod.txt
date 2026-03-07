@@ -1,0 +1,6 @@
+Pod ID: wf4z40jn9kse3a
+IP: 209.170.80.132
+Port: 10913
+SSH: ssh root@209.170.80.132 -p 10913
+Experiment: robustness (varied, randstart, combined x2)
+Started: 2026-03-06

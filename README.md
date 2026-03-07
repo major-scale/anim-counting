@@ -56,7 +56,7 @@ Every row in this table is a separate training run (50K–300K steps). Every sin
 
 The manifold does not appear to be an accident. It emerged consistently across every condition we tested, suggesting it is a reliable outcome of learning to predict gathering dynamics.
 
-**An important caveat:** All evidence above is correlational. We show that a counting-correlated geometric structure exists in the hidden state and persists across conditions, but we have not performed causal interventions &mdash; modifying the hidden state along the manifold and verifying that downstream predictions change accordingly. Following the standard established by Othello-GPT (Li et al. 2023; Nanda et al. 2023), causal validation would be needed to confirm that the model *uses* this representation rather than merely *contains* it. The prior R&sup2;=0.956 (see Successor Function section) provides indirect evidence of functional use, but is not a substitute for intervention experiments.
+**An important caveat:** All evidence above is correlational. We show that a counting-correlated geometric structure exists in the hidden state and persists across conditions, but we have not performed causal interventions &mdash; modifying the hidden state along the manifold and verifying that downstream predictions change accordingly. Following the standard established by Othello-GPT (Li et al. 2023; Nanda et al. 2023), causal validation would be needed to confirm that the model _uses_ this representation rather than merely _contains_ it. The prior R&sup2;=0.956 (see Successor Function section) provides indirect evidence of functional use, but is not a substitute for intervention experiments.
 
 ## The Random Projection Surprise
 
@@ -266,7 +266,7 @@ This project was built by **major-scale** and **Claude** (Anthropic) working tog
 
 **Shah et al. (2020)** &mdash; [The Pitfalls of Simplicity Bias in Neural Networks](https://arxiv.org/abs/2006.07710). Formally characterized simplicity bias &mdash; networks preferring axis-aligned features over distributed ones. This is the mechanism behind our coordinate-structure disruption finding.
 
-**Belinkov (2022)** &mdash; [Probing Classifiers: Promises, Shortcomings, and Advances](https://doi.org/10.1162/coli_a_00422). Comprehensive review of the limitations of linear probes for establishing that a model *uses* a representation. High probe accuracy establishes decodability, not functional use. Our prior R&sup2;=0.956 provides indirect evidence of functional integration but does not replace the causal interventions Belinkov advocates.
+**Belinkov (2022)** &mdash; [Probing Classifiers: Promises, Shortcomings, and Advances](https://doi.org/10.1162/coli_a_00422). Comprehensive review of the limitations of linear probes for establishing that a model _uses_ a representation. High probe accuracy establishes decodability, not functional use. Our prior R&sup2;=0.956 provides indirect evidence of functional integration but does not replace the causal interventions Belinkov advocates.
 
 **Cueva & Wei (2018)** &mdash; [Emergence of Grid-Like Representations by Training Recurrent Neural Networks to Perform Spatial Localization](https://arxiv.org/abs/1803.07770). Grid-cell-like spatial representations emerge in RNNs trained on path integration. The most direct paradigmatic precedent for our work: structured representations emerging in recurrent networks from task optimization, without explicit geometric supervision.
 
@@ -288,13 +288,13 @@ This section shows the numbers behind the findings above, organized by result. A
 
 The core finding replicates across 5 independent training seeds with different random initializations, training orderings, and hardware:
 
-| Seed | Steps | Hardware | GHE | Arc R&sup2; | RSA | Topology |
-|:----:|:-----:|:--------:|:---:|:-----------:|:---:|:--------:|
-| 0 | 300K | Mac MPS | 0.327 | 0.998 | 0.984 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
-| 1 | 155K | Mac MPS | 0.331 | 0.997 | 0.978 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
-| 3 | 211K | RTX 4090 | 0.374 | 0.996 | 0.975 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
-| 4 | 215K | RTX 4090 | 0.288 | 0.998 | 0.983 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
-| 5 | 50K | RTX 4090 | 0.324 | 0.995 | 0.984 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
+| Seed | Steps | Hardware |  GHE  | Arc R&sup2; |  RSA  |                  Topology                  |
+| :--: | :---: | :------: | :---: | :---------: | :---: | :----------------------------------------: |
+|  0   | 300K  | Mac MPS  | 0.327 |    0.998    | 0.984 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
+|  1   | 155K  | Mac MPS  | 0.331 |    0.997    | 0.978 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
+|  3   | 211K  | RTX 4090 | 0.374 |    0.996    | 0.975 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
+|  4   | 215K  | RTX 4090 | 0.288 |    0.998    | 0.983 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
+|  5   |  50K  | RTX 4090 | 0.324 |    0.995    | 0.984 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |
 
 **Mean GHE: 0.329 &plusmn; 0.027.** Topology is unanimous. Seed 5 converged at only 50K steps, suggesting the structure forms early in training. Seed 4 achieved the best GHE (0.288), seed 3 the worst (0.374) &mdash; all comfortably below the 0.5 operational threshold.
 
@@ -304,14 +304,20 @@ Source: `artifacts/reports/replication_summary.json`
 
 To confirm the manifold is learned (not an artifact of the architecture), we ran an untrained DreamerV3 (random weights) on the exact same observation stream as a trained model:
 
-| Metric | Trained | Untrained | Interpretation |
-|:-------|:-------:|:---------:|:---------------|
-| GHE | 0.281 | 0.395 | Spacing less uniform |
-| Arc R&sup2; | 0.998 | 0.985 | Slight ordering degradation |
-| RSA | 0.982 | 0.591 | **Ordinal structure collapses** |
-| PCA PC1 | 73.0% | 23.0% | **No dominant counting axis** |
+| Metric      | Trained | Untrained | Interpretation                  |
+| :---------- | :-----: | :-------: | :------------------------------ |
+| GHE         |  0.281  |   0.395   | Spacing less uniform            |
+| Arc R&sup2; |  0.998  |   0.985   | Slight ordering degradation     |
+| RSA         |  0.982  |   0.591   | **Ordinal structure collapses** |
+| PCA PC1     |  73.0%  |   23.0%   | **No dominant counting axis**   |
 
-The untrained model's RSA of 0.591 is close to chance &mdash; it does not preserve ordinal relationships between counts. Its PCA PC1 of 23% means count information is diffusely distributed rather than concentrated. Both models saw identical observations (117,212 timesteps). The trained model's structure is a product of learning, not of the data format or architecture.
+The table understates the gap. Visualizing all 117,212 hidden states (not just centroids) makes the difference visceral:
+
+<p align="center">
+  <img src="figures/supp_projection_contrast.png" alt="Trained vs untrained hidden states: ordered arcs vs confetti" width="100%">
+</p>
+
+**Figure 4: Trained vs. untrained &mdash; the same 117K hidden states projected three ways.** Top row: the trained model's states trace color-ordered arcs (count encoded as color, low&rarr;high = dark&rarr;light). Bottom row: the untrained model's states scatter like confetti &mdash; a uniform cloud with no count structure (r&sup2; &lt; 0.01 across all three projection methods). Both models saw identical observations. The structure is a product of learning, not of the data format or architecture.
 
 Source: `artifacts/h_t_data/untrained_comparison.json`
 
@@ -343,12 +349,12 @@ Source: `artifacts/tools/data/curved_manifold_analysis.json`
 
 If the manifold is a consequence of the task rather than the architecture, different model families should produce it too. We tested three:
 
-| Architecture | Hidden Size | GHE | Arc R&sup2; | Topology | Probe R&sup2; |
-|:-------------|:----------:|:---:|:-----------:|:--------:|:-------------:|
-| DreamerV3 RSSM (baseline) | 512 | 0.269 | 0.997 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.983 |
-| LSTM | 512 | 0.379 | 0.997 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.994 |
-| MLP | 512 | 0.350 | 0.995 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.999 |
-| MLP (no count) | 512 | 0.511 | 0.994 | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 | 0.730 |
+| Architecture              | Hidden Size |  GHE  | Arc R&sup2; |                  Topology                  | Probe R&sup2; |
+| :------------------------ | :---------: | :---: | :---------: | :----------------------------------------: | :-----------: |
+| DreamerV3 RSSM (baseline) |     512     | 0.269 |    0.997    | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |     0.983     |
+| LSTM                      |     512     | 0.379 |    0.997    | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |     0.994     |
+| MLP                       |     512     | 0.350 |    0.995    | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |     0.999     |
+| MLP (no count)            |     512     | 0.511 |    0.994    | &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 |     0.730     |
 
 All four architectures produce &beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0. The MLP-nocount model (which never sees the count observation) has the worst GHE (0.511, borderline) and lowest probe R&sup2; (0.730), but still maintains the correct topology. The MLP model (which does see the count) achieves the highest PC1 concentration of any model tested: 94.5% of variance in a single principal component. A more parsimonious interpretation of the MLP-nocount degradation is that, lacking recurrence, it cannot maintain precise count trajectories over time, yielding a noisier but still count-correlated representation &mdash; rather than indicating a qualitative difference in counting mechanism. These results are from single seeds per architecture and should be interpreted with appropriate caution.
 
@@ -358,12 +364,12 @@ Source: `artifacts/battery/lstm_mlp/summary.json`
 
 The manifold lives in a 512-dimensional space, but how many dimensions does it actually use? Two estimators:
 
-| Model | TwoNN (local) | MLE (global) |
-|:------|:------------:|:------------:|
-| Baseline s0 | 5.5 | 7.6 |
-| Randproj s0 | 6.1 | 9.3 |
-| Randproj s7 | 5.8 | 8.4 |
-| Randproj s8 | 5.8 | 8.7 |
+| Model       | TwoNN (local) | MLE (global) |
+| :---------- | :-----------: | :----------: |
+| Baseline s0 |      5.5      |     7.6      |
+| Randproj s0 |      6.1      |     9.3      |
+| Randproj s7 |      5.8      |     8.4      |
+| Randproj s8 |      5.8      |     8.7      |
 
 The manifold occupies roughly 5-9 dimensions of the available 512. TwoNN (local geometry) consistently reports ~5.5-6.1; MLE (global structure) reports ~7.6-9.3. The discrepancy between local and global estimates is consistent with a curved manifold &mdash; locally it looks lower-dimensional than its global embedding requires. This is more than 1D (a perfectly straight number line) because the manifold curves, and because non-counting information (spatial configuration, phase of episode) adds additional variance dimensions.
 
@@ -411,7 +417,7 @@ This means 95.6% of counting information is carried in the model's accumulated t
 
 ### Limitations and Open Questions
 
-**No causal interventions.** All evidence is correlational. We show that a counting-correlated geometric structure exists and persists across conditions, but we have not modified the hidden state along the manifold to verify that downstream predictions change. This is the standard established by Li et al. (2023) on Othello-GPT. Until causal validation is performed, we cannot distinguish between a representation the model *uses* and one that merely *exists*. The prior R&sup2;=0.956 provides indirect evidence of functional integration but is not a substitute.
+**No causal interventions.** All evidence is correlational. We show that a counting-correlated geometric structure exists and persists across conditions, but we have not modified the hidden state along the manifold to verify that downstream predictions change. This is the standard established by Li et al. (2023) on Othello-GPT. Until causal validation is performed, we cannot distinguish between a representation the model _uses_ and one that merely _exists_. The prior R&sup2;=0.956 provides indirect evidence of functional integration but is not a substitute.
 
 **Five seeds is below RL best practice.** Henderson et al. (2018) showed that 5 seeds can produce Type I errors; Agarwal et al. (2021) recommend IQM with stratified bootstrap confidence intervals. Our topology result (&beta;<sub>0</sub>=1, &beta;<sub>1</sub>=0 unanimous) is robust because it is discrete, but GHE confidence intervals would benefit from more seeds. The ablation conditions (3 seeds each) are similarly limited.
 
@@ -423,18 +429,18 @@ This means 95.6% of counting information is carried in the model's accumulated t
 
 ### Summary of Evidence
 
-| Claim | Evidence | Strength |
-|:------|:---------|:---------|
-| Number line emerges | 5 seeds, GHE 0.329&plusmn;0.027, unanimous topology | Strong (replicated) |
-| Manifold is learned | Untrained RSA degrades 0.982&rarr;0.591 | Strong (controlled) |
-| Robust to info removal | 3 conditions &times; 3 seeds, max GHE 0.367 | Strong (replicated) |
-| Architecture independent | LSTM, MLP, MLP-nocount all &beta;<sub>0</sub>=1 &beta;<sub>1</sub>=0 | Moderate (single seeds) |
-| Spacing is linear, not log | Weber-Fechner R&sup2; = 0.017 | Strong |
-| Random projection improves it | SNR 502&rarr;825, accuracy 81%&rarr;95% | Strong (3 seeds) |
-| Topology is dimension-invariant | &beta;<sub>0</sub>=1 &beta;<sub>1</sub>=0 at D=2,3,4,5,10 | Strong |
-| Arrangement invariant | 20 types, &Delta; = -1.1% vs baseline | Strong |
-| Model anticipates transitions | Anticipation up to 50 timesteps | Preliminary (1 episode) |
-| Prior carries 95.6% of count | R&sup2; = 0.956 from recurrent state alone | Moderate (1 seed) |
+| Claim                           | Evidence                                                             | Strength                |
+| :------------------------------ | :------------------------------------------------------------------- | :---------------------- |
+| Number line emerges             | 5 seeds, GHE 0.329&plusmn;0.027, unanimous topology                  | Strong (replicated)     |
+| Manifold is learned             | Untrained RSA degrades 0.982&rarr;0.591                              | Strong (controlled)     |
+| Robust to info removal          | 3 conditions &times; 3 seeds, max GHE 0.367                          | Strong (replicated)     |
+| Architecture independent        | LSTM, MLP, MLP-nocount all &beta;<sub>0</sub>=1 &beta;<sub>1</sub>=0 | Moderate (single seeds) |
+| Spacing is linear, not log      | Weber-Fechner R&sup2; = 0.017                                        | Strong                  |
+| Random projection improves it   | SNR 502&rarr;825, accuracy 81%&rarr;95%                              | Strong (3 seeds)        |
+| Topology is dimension-invariant | &beta;<sub>0</sub>=1 &beta;<sub>1</sub>=0 at D=2,3,4,5,10            | Strong                  |
+| Arrangement invariant           | 20 types, &Delta; = -1.1% vs baseline                                | Strong                  |
+| Model anticipates transitions   | Anticipation up to 50 timesteps                                      | Preliminary (1 episode) |
+| Prior carries 95.6% of count    | R&sup2; = 0.956 from recurrent state alone                           | Moderate (1 seed)       |
 
 ---
 

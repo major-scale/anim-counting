@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>25-Blob Brain Maps</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', monospace; padding: 20px; }
+  h1 { text-align: center; font-size: 1.6rem; margin-bottom: 8px; color: #fff; }
+  .subtitle { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 30px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1600px; margin: 0 auto; }
+  .card { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
+  .card img { width: 100%; display: block; cursor: pointer; transition: transform 0.2s; }
+  .card img:hover { transform: scale(1.02); }
+  .card .label { padding: 10px 14px; font-size: 0.8rem; color: #aaa; border-top: 1px solid #2a2a2a; }
+  .card .label strong { color: #fff; }
+  .full-width { grid-column: 1 / -1; }
+
+  .comparison { max-width: 1600px; margin: 40px auto 20px; }
+  .comparison h2 { font-size: 1.2rem; margin-bottom: 16px; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th { text-align: left; padding: 8px 12px; background: #1a1a1a; border-bottom: 2px solid #333; color: #aaa; }
+  td { padding: 6px 12px; border-bottom: 1px solid #1e1e1e; }
+  tr:hover td { background: #1a1a1a; }
+  .better { color: #4ade80; }
+  .worse { color: #f87171; }
+  .neutral { color: #888; }
+  .spike { background: #2a1515; color: #f87171; font-weight: bold; }
+
+  .verdict-box { max-width: 1600px; margin: 30px auto; background: #1a1008; border: 1px solid #4a3520; border-radius: 8px; padding: 20px; }
+  .verdict-box h3 { color: #fbbf24; margin-bottom: 10px; }
+  .verdict-box p { color: #d4a574; line-height: 1.6; font-size: 0.85rem; }
+
+  .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; cursor: zoom-out; align-items: center; justify-content: center; }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
+</style>
+</head>
+<body>
+
+<h1>DreamerV3 — 25-Blob Brain Maps</h1>
+<p class="subtitle">Train: 312K steps, 80 episodes (sweep: 3/5/8/10/12/15/20/25 blobs) · 191,503 eval timesteps · 512-dim RSSM latent</p>
+
+<div class="grid">
+  <div class="card full-width">
+    <img src="brain_map_pca.png" alt="PCA Brain Map" onclick="openLightbox(this)">
+    <div class="label"><strong>PCA (full 191K pts)</strong> — Clear left-to-right ordinal progression. Manifold curves/bends rather than staying linear. Low counts (0-8) spread wide, high counts (15-25) compress on right.</div>
+  </div>
+
+  <div class="card">
+    <img src="brain_map_default.png" alt="UMAP Default" onclick="openLightbox(this)">
+    <div class="label"><strong>UMAP Default</strong> (n=15, d=0.1, 20K pts) — Fragmented clusters. Centroids trace ordinal path.</div>
+  </div>
+
+  <div class="card">
+    <img src="brain_map_local.png" alt="UMAP Local" onclick="openLightbox(this)">
+    <div class="label"><strong>UMAP Local</strong> (n=5, d=0.05) — Tighter local clusters, more separation between count groups.</div>
+  </div>
+
+  <div class="card">
+    <img src="brain_map_global.png" alt="UMAP Global" onclick="openLightbox(this)">
+    <div class="label"><strong>UMAP Global</strong> (n=30, d=0.3) — Broader structure preserved. Ordinal path from bottom-right to upper-left.</div>
+  </div>
+
+  <div class="card">
+    <img src="inter_cluster_distances.png" alt="Inter-cluster distances" onclick="openLightbox(this)">
+    <div class="label"><strong>Inter-Cluster Distances</strong> — Spikes at round-number boundaries (0→1, 4→5, 9→10, 14→15, 19→20).</div>
+  </div>
+</div>
+
+<div class="comparison">
+  <h2>Battery: Frozen Baseline (0-8) vs New Model (0-25)</h2>
+  <table>
+    <tr><th>Metric</th><th>Old (0-8)</th><th>New (0-25)</th><th>Change</th></tr>
+    <tr><td>RSA Spearman ρ</td><td>0.9508</td><td>0.9897</td><td class="better">+0.039 ↑</td></tr>
+    <tr><td>RSA Pearson r</td><td>0.9556</td><td>0.9875</td><td class="better">+0.032 ↑</td></tr>
+    <tr><td>HE Total</td><td>2.827</td><td>7.408</td><td class="worse">+4.581 ↓</td></tr>
+    <tr><td>Mean Pairwise Cosine</td><td>0.202</td><td>0.167</td><td class="worse">−0.035 ↓</td></tr>
+    <tr><td>Displacement Sim Mean</td><td>0.204</td><td>0.161</td><td class="worse">−0.043 ↓</td></tr>
+    <tr><td>Corrected Disp Mean</td><td>0.385</td><td>0.179</td><td class="worse">−0.207 ↓</td></tr>
+  </table>
+</div>
+
+<div class="comparison">
+  <h2>Per-Transition Homomorphism Error</h2>
+  <table>
+    <tr><th>Transition</th><th>Old HE</th><th>New HE</th><th>Old Norm</th><th>New Norm</th></tr>
+    <tr><td>0→1</td><td>9.59</td><td class="spike">32.51</td><td>5.118</td><td>3.432</td></tr>
+    <tr><td>1→2</td><td>1.60</td><td>6.68</td><td>2.659</td><td>1.670</td></tr>
+    <tr><td>2→3</td><td>0.90</td><td>7.83</td><td>2.228</td><td>1.787</td></tr>
+    <tr><td>3→4</td><td>1.40</td><td>3.36</td><td>2.518</td><td>1.267</td></tr>
+    <tr><td>4→5</td><td>2.61</td><td class="spike">11.16</td><td>3.046</td><td>2.118</td></tr>
+    <tr><td>5→6</td><td>3.57</td><td>1.73</td><td>3.356</td><td>1.030</td></tr>
+    <tr><td>6→7</td><td>1.53</td><td>1.34</td><td>2.384</td><td>0.944</td></tr>
+    <tr><td>7→8</td><td>1.42</td><td>2.94</td><td>0.957</td><td>1.194</td></tr>
+    <tr><td>8→9</td><td class="neutral">—</td><td>1.77</td><td class="neutral">—</td><td>0.976</td></tr>
+    <tr><td>9→10</td><td class="neutral">—</td><td>5.24</td><td class="neutral">—</td><td>1.503</td></tr>
+    <tr><td>10→11</td><td class="neutral">—</td><td>2.10</td><td class="neutral">—</td><td>1.033</td></tr>
+    <tr><td>11→12</td><td class="neutral">—</td><td class="spike">11.20</td><td class="neutral">—</td><td>2.103</td></tr>
+    <tr><td>12→13</td><td class="neutral">—</td><td>3.00</td><td class="neutral">—</td><td>1.135</td></tr>
+    <tr><td>13→14</td><td class="neutral">—</td><td>1.78</td><td class="neutral">—</td><td>1.006</td></tr>
+    <tr><td>14→15</td><td class="neutral">—</td><td class="spike">21.11</td><td class="neutral">—</td><td>2.757</td></tr>
+    <tr><td>15→16</td><td class="neutral">—</td><td>2.14</td><td class="neutral">—</td><td>1.081</td></tr>
+    <tr><td>16→17</td><td class="neutral">—</td><td>2.63</td><td class="neutral">—</td><td>1.130</td></tr>
+    <tr><td>17→18</td><td class="neutral">—</td><td>2.65</td><td class="neutral">—</td><td>1.128</td></tr>
+    <tr><td>18→19</td><td class="neutral">—</td><td>3.34</td><td class="neutral">—</td><td>1.176</td></tr>
+    <tr><td>19→20</td><td class="neutral">—</td><td class="spike">37.85</td><td class="neutral">—</td><td>3.751</td></tr>
+    <tr><td>20→21</td><td class="neutral">—</td><td>4.57</td><td class="neutral">—</td><td>1.410</td></tr>
+    <tr><td>21→22</td><td class="neutral">—</td><td>2.52</td><td class="neutral">—</td><td>1.015</td></tr>
+    <tr><td>22→23</td><td class="neutral">—</td><td>5.09</td><td class="neutral">—</td><td>1.381</td></tr>
+    <tr><td>23→24</td><td class="neutral">—</td><td>3.92</td><td class="neutral">—</td><td>1.262</td></tr>
+    <tr><td>24→25</td><td class="neutral">—</td><td>6.75</td><td class="neutral">—</td><td>1.398</td></tr>
+  </table>
+</div>
+
+<div class="grid" style="margin-top: 30px;">
+  <div class="card">
+    <img src="successor_rsa.png" alt="RSA" onclick="openLightbox(this)">
+    <div class="label"><strong>RSA Matrix</strong></div>
+  </div>
+  <div class="card">
+    <img src="successor_homomorphism.png" alt="Homomorphism" onclick="openLightbox(this)">
+    <div class="label"><strong>Homomorphism Error</strong></div>
+  </div>
+  <div class="card">
+    <img src="successor_anisotropy.png" alt="Anisotropy" onclick="openLightbox(this)">
+    <div class="label"><strong>Anisotropy</strong></div>
+  </div>
+  <div class="card">
+    <img src="successor_geodesic.png" alt="Geodesic" onclick="openLightbox(this)">
+    <div class="label"><strong>Geodesic Linearity</strong></div>
+  </div>
+</div>
+
+<div class="verdict-box">
+  <h3>Verdict: ORDINAL WITHOUT OPERATIONAL SUCCESSOR</h3>
+  <p>
+    Both models produce the same verdict. The 25-blob model has <strong>better ordinal structure</strong> (ρ = 0.990)
+    but <strong>worse successor consistency</strong> (HE = 7.41 vs 2.83). The model solves counting by
+    <em>recognizing configurations</em>, not by <em>iterating a successor function</em>.
+    Massive HE spikes at round-number transitions (0→1: 32.5, 14→15: 21.1, 19→20: 37.9)
+    indicate the latent manifold has structural discontinuities where observation geometry changes qualitatively.
+    More range = more boundary discontinuities = harder to learn a single uniform +1 operation.
+    This is "lookup table" numeracy rather than "algorithmic" numeracy.
+  </p>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+function openLightbox(el) {
+  document.getElementById('lightbox-img').src = el.src;
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+
+</body>
+</html>

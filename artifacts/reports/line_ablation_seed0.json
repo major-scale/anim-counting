@@ -1,0 +1,16 @@
+{
+  "he": 13.948612213134766,
+  "ghe": 0.2884604981433187,
+  "arc_length_r2": 0.9983049249826754,
+  "beta_0": 1,
+  "beta_1": 0,
+  "rsa_spearman": 0.9821463572252676,
+  "n_counts": 26,
+  "n_timesteps": 123363,
+  "count_range": [
+    0,
+    25
+  ],
+  "train_step": 114983,
+  "eval_time_seconds": 392.7
+}

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Explorer — UMAP Trajectory Viewer</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; overflow: hidden; height: 100vh; }
+
+#app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: 1fr 80px; height: 100vh; gap: 0; }
+
+#plot-container { grid-row: 1; grid-column: 1; position: relative; }
+#umap-plot { width: 100%; height: 100%; }
+
+#sidebar { grid-row: 1 / 3; grid-column: 2; background: #16213e; padding: 16px; overflow-y: auto; border-left: 2px solid #0f3460; }
+
+#timeline { grid-row: 2; grid-column: 1; background: #16213e; padding: 10px 20px; border-top: 2px solid #0f3460; display: flex; align-items: center; gap: 12px; }
+
+/* Sidebar sections */
+.section { margin-bottom: 16px; }
+.section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+
+/* Episode selector */
+#episode-select { width: 100%; padding: 8px; background: #1a1a2e; color: #e0e0e0; border: 1px solid #0f3460; border-radius: 4px; font-size: 13px; }
+#episode-select option { background: #1a1a2e; }
+
+/* Info panel */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.info-label { font-size: 11px; color: #888; }
+.info-value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.info-value.large { font-size: 24px; }
+
+/* Tags */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin: 2px; }
+.tag-clean { background: #2ca02c33; color: #2ca02c; }
+.tag-interesting { background: #d6272833; color: #d62728; }
+.tag-reaches-8 { background: #9467bd33; color: #9467bd; }
+.tag-noisy { background: #ff7f0e33; color: #ff7f0e; }
+
+/* UMAP toggle */
+.toggle-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.toggle-btn { padding: 4px 10px; border: 1px solid #0f3460; background: transparent; color: #888; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.toggle-btn.active { background: #0f3460; color: #e0e0e0; border-color: #533483; }
+.toggle-btn:hover { border-color: #533483; }
+
+/* Controls */
+.controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ctrl-btn { padding: 6px 12px; background: #0f3460; border: 1px solid #533483; color: #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.ctrl-btn:hover { background: #533483; }
+.ctrl-btn.active { background: #533483; }
+
+/* Timeline */
+#timeline-slider { flex: 1; accent-color: #533483; height: 6px; }
+#time-display { font-size: 13px; min-width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Overlay checkbox */
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.checkbox-row input { accent-color: #533483; }
+.checkbox-row label { font-size: 12px; cursor: pointer; }
+
+/* Prediction chart */
+#pred-chart { width: 100%; height: 120px; margin-top: 8px; }
+
+/* Loading */
+#loading { position: fixed; inset: 0; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+#loading h1 { font-size: 24px; margin-bottom: 12px; }
+#loading p { color: #888; }
+#loading.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+    <h1>Brain Explorer</h1>
+    <p>Loading data...</p>
+    <p style="font-size: 12px; margin-top: 8px; color: #666;">
+        Drag brain_explorer_data.json here, or place it in data/ alongside this HTML file.
+    </p>
+</div>
+
+<div id="app" style="display:none;">
+    <div id="plot-container">
+        <div id="umap-plot"></div>
+    </div>
+
+    <div id="sidebar">
+        <div class="section">
+            <div class="section-title">Episode</div>
+            <select id="episode-select"></select>
+            <div id="episode-tags" style="margin-top: 6px;"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Current State</div>
+            <div class="info-grid">
+                <div>
+                    <div class="info-label">True Count</div>
+                    <div class="info-value large" id="info-count">—</div>
+                </div>
+                <div>
+                    <div class="info-label">Prediction</div>
+                    <div class="info-value large" id="info-pred">—</div>
+                </div>
+                <div>
+                    <div class="info-label">Error</div>
+                    <div class="info-value" id="info-error">—</div>
+                </div>
+                <div>
+                    <div class="info-label">Reward</div>
+                    <div class="info-value" id="info-reward">—</div>
+                </div>
+                <div>
+                    <div class="info-label">Bot Position</div>
+                    <div class="info-value" id="info-bot">—</div>
+                </div>
+                <div>
+                    <div class="info-label">Timestep</div>
+                    <div class="info-value" id="info-step">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Prediction Over Time</div>
+            <div id="pred-chart"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">UMAP Config</div>
+            <div class="toggle-group" id="umap-toggles">
+                <button class="toggle-btn active" data-config="default">Default</button>
+                <button class="toggle-btn" data-config="local">Local</button>
+                <button class="toggle-btn" data-config="global">Global</button>
+                <button class="toggle-btn" data-config="pca">PCA</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Display</div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="show-overlay">
+                <label for="show-overlay">Show all episode trails</label>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="show-centers" checked>
+                <label for="show-centers">Show cluster centers</label>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="show-marks" checked>
+                <label for="show-marks">Highlight marking events</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Speed</div>
+            <div class="toggle-group" id="speed-toggles">
+                <button class="toggle-btn" data-speed="1">1x</button>
+                <button class="toggle-btn active" data-speed="2">2x</button>
+                <button class="toggle-btn" data-speed="5">5x</button>
+                <button class="toggle-btn" data-speed="10">10x</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="timeline">
+        <div class="controls">
+            <button class="ctrl-btn" id="btn-prev" title="Previous step">&lt;</button>
+            <button class="ctrl-btn" id="btn-play" title="Play/Pause">Play</button>
+            <button class="ctrl-btn" id="btn-next" title="Next step">&gt;</button>
+        </div>
+        <input type="range" id="timeline-slider" min="0" max="100" value="0">
+        <div id="time-display">Step 0 / 0</div>
+    </div>
+</div>
+
+<script>
+// ─── Constants ─────────────────────────────────────────────
+const COUNT_COLORS = [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
+];
+const TRAIL_LENGTH = 30;
+
+// ─── State ─────────────────────────────────────────────────
+let DATA = null;
+let currentEpIdx = 0;
+let currentStep = 0;
+let currentConfig = 'default';
+let playSpeed = 2;
+let isPlaying = false;
+let playTimer = null;
+
+// ─── Data Loading ──────────────────────────────────────────
+async function loadData() {
+    // Try loading from data/ subdirectory
+    const paths = [
+        'data/brain_explorer_data.json',
+        './data/brain_explorer_data.json',
+        'brain_explorer_data.json',
+    ];
+    for (const path of paths) {
+        try {
+            const resp = await fetch(path);
+            if (resp.ok) {
+                DATA = await resp.json();
+                console.log('Loaded data from', path);
+                return true;
+            }
+        } catch (e) { /* try next */ }
+    }
+    return false;
+}
+
+// Also support drag-and-drop
+document.getElementById('loading').addEventListener('dragover', e => { e.preventDefault(); });
+document.getElementById('loading').addEventListener('drop', async e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+        const text = await file.text();
+        DATA = JSON.parse(text);
+        init();
+    }
+});
+
+// ─── Initialization ────────────────────────────────────────
+async function init() {
+    if (!DATA) {
+        const loaded = await loadData();
+        if (!loaded) return; // Keep loading screen visible for drag-drop
+    }
+
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('app').style.display = '';
+
+    populateEpisodeSelect();
+    setupEventListeners();
+    selectEpisode(0);
+    initPredChart();
+}
+
+function populateEpisodeSelect() {
+    const select = document.getElementById('episode-select');
+    DATA.episodes.forEach((ep, idx) => {
+        const opt = document.createElement('option');
+        const tags = ep.tags.length > 0 ? ` [${ep.tags.join(', ')}]` : '';
+        opt.value = idx;
+        opt.textContent = `Ep ${ep.id}: ${ep.blob_count} blobs, ${ep.length} steps${tags}`;
+        select.appendChild(opt);
+    });
+}
+
+function setupEventListeners() {
+    // Episode select
+    document.getElementById('episode-select').addEventListener('change', e => {
+        selectEpisode(parseInt(e.target.value));
+    });
+
+    // UMAP toggles
+    document.querySelectorAll('#umap-toggles .toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#umap-toggles .toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentConfig = btn.dataset.config;
+            renderPlot();
+        });
+    });
+
+    // Speed toggles
+    document.querySelectorAll('#speed-toggles .toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#speed-toggles .toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playSpeed = parseInt(btn.dataset.speed);
+        });
+    });
+
+    // Play/Pause
+    document.getElementById('btn-play').addEventListener('click', togglePlay);
+    document.getElementById('btn-prev').addEventListener('click', () => stepBy(-1));
+    document.getElementById('btn-next').addEventListener('click', () => stepBy(1));
+
+    // Timeline slider
+    const slider = document.getElementById('timeline-slider');
+    slider.addEventListener('input', () => {
+        currentStep = parseInt(slider.value);
+        updateCursor();
+    });
+
+    // Display checkboxes
+    ['show-overlay', 'show-centers', 'show-marks'].forEach(id => {
+        document.getElementById(id).addEventListener('change', renderPlot);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+        if (e.key === 'ArrowLeft') stepBy(-1);
+        if (e.key === 'ArrowRight') stepBy(1);
+        if (e.key === 'ArrowUp') { e.preventDefault(); changeEpisode(-1); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); changeEpisode(1); }
+    });
+}
+
+// ─── Episode Management ────────────────────────────────────
+function selectEpisode(idx) {
+    currentEpIdx = idx;
+    currentStep = 0;
+    const ep = DATA.episodes[idx];
+
+    // Update slider
+    const slider = document.getElementById('timeline-slider');
+    slider.max = ep.length - 1;
+    slider.value = 0;
+
+    // Update tags
+    const tagsDiv = document.getElementById('episode-tags');
+    tagsDiv.innerHTML = ep.tags.map(t => `<span class="tag tag-${t}">${t}</span>`).join('');
+
+    // Update select
+    document.getElementById('episode-select').value = idx;
+
+    // Update pred chart
+    updatePredChart();
+
+    // Render
+    renderPlot();
+}
+
+function changeEpisode(delta) {
+    const newIdx = Math.max(0, Math.min(DATA.episodes.length - 1, currentEpIdx + delta));
+    if (newIdx !== currentEpIdx) selectEpisode(newIdx);
+}
+
+// ─── Playback ──────────────────────────────────────────────
+function togglePlay() {
+    isPlaying = !isPlaying;
+    document.getElementById('btn-play').textContent = isPlaying ? 'Pause' : 'Play';
+    document.getElementById('btn-play').classList.toggle('active', isPlaying);
+    if (isPlaying) startPlayback();
+    else stopPlayback();
+}
+
+function startPlayback() {
+    if (playTimer) clearInterval(playTimer);
+    playTimer = setInterval(() => {
+        const ep = DATA.episodes[currentEpIdx];
+        currentStep += playSpeed;
+        if (currentStep >= ep.length) {
+            currentStep = ep.length - 1;
+            togglePlay();
+        }
+        document.getElementById('timeline-slider').value = currentStep;
+        updateCursor();
+    }, 50);
+}
+
+function stopPlayback() {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+}
+
+function stepBy(delta) {
+    const ep = DATA.episodes[currentEpIdx];
+    currentStep = Math.max(0, Math.min(ep.length - 1, currentStep + delta));
+    document.getElementById('timeline-slider').value = currentStep;
+    updateCursor();
+}
+
+// ─── Rendering ─────────────────────────────────────────────
+function renderPlot() {
+    const ep = DATA.episodes[currentEpIdx];
+    const bg = DATA.background;
+    const cfg = currentConfig;
+    const showOverlay = document.getElementById('show-overlay').checked;
+    const showCenters = document.getElementById('show-centers').checked;
+
+    const traces = [];
+
+    // Background scatter
+    traces.push({
+        x: bg[`x_${cfg}`],
+        y: bg[`y_${cfg}`],
+        mode: 'markers',
+        type: 'scattergl',
+        marker: {
+            size: 3,
+            color: bg.count.map(c => COUNT_COLORS[c]),
+            opacity: 0.25,
+        },
+        hoverinfo: 'text',
+        text: bg.count.map(c => `count=${c}`),
+        name: 'Background',
+        showlegend: false,
+    });
+
+    // All episode trails (overlay)
+    if (showOverlay) {
+        DATA.episodes.forEach((otherEp, idx) => {
+            if (idx === currentEpIdx) return;
+            traces.push({
+                x: otherEp[`x_${cfg}`],
+                y: otherEp[`y_${cfg}`],
+                mode: 'lines',
+                type: 'scattergl',
+                line: { color: 'rgba(255,255,255,0.06)', width: 1 },
+                hoverinfo: 'skip',
+                showlegend: false,
+            });
+        });
+    }
+
+    // Cluster centers
+    if (showCenters) {
+        const centers = DATA.cluster_centers[cfg];
+        if (centers) {
+            const cx = [], cy = [], ctext = [], ccolors = [];
+            const sortedKeys = Object.keys(centers).sort((a, b) => parseInt(a) - parseInt(b));
+
+            // Connecting lines
+            for (let i = 0; i < sortedKeys.length - 1; i++) {
+                const k1 = sortedKeys[i], k2 = sortedKeys[i + 1];
+                traces.push({
+                    x: [centers[k1][0], centers[k2][0]],
+                    y: [centers[k1][1], centers[k2][1]],
+                    mode: 'lines',
+                    type: 'scatter',
+                    line: { color: 'rgba(255,255,255,0.3)', width: 1.5, dash: 'dash' },
+                    hoverinfo: 'skip',
+                    showlegend: false,
+                });
+            }
+
+            sortedKeys.forEach(k => {
+                cx.push(centers[k][0]);
+                cy.push(centers[k][1]);
+                ctext.push(k);
+                ccolors.push(COUNT_COLORS[parseInt(k)]);
+            });
+            traces.push({
+                x: cx, y: cy,
+                mode: 'markers+text',
+                type: 'scatter',
+                marker: { size: 20, color: ccolors, line: { color: 'white', width: 2 } },
+                text: ctext,
+                textfont: { color: 'white', size: 12, family: 'Arial Black' },
+                textposition: 'middle center',
+                hoverinfo: 'text',
+                hovertext: ctext.map(k => `Center: count=${k}`),
+                name: 'Centers',
+                showlegend: false,
+            });
+        }
+    }
+
+    // Active episode trail (full path, faded)
+    traces.push({
+        x: ep[`x_${cfg}`],
+        y: ep[`y_${cfg}`],
+        mode: 'lines',
+        type: 'scatter',
+        line: { color: 'rgba(255,255,255,0.15)', width: 1 },
+        hoverinfo: 'skip',
+        name: 'Full path',
+        showlegend: false,
+    });
+
+    // Trail (last N steps before cursor)
+    const trailStart = Math.max(0, currentStep - TRAIL_LENGTH);
+    const trailX = ep[`x_${cfg}`].slice(trailStart, currentStep + 1);
+    const trailY = ep[`y_${cfg}`].slice(trailStart, currentStep + 1);
+    const trailColors = ep.count.slice(trailStart, currentStep + 1).map(c => COUNT_COLORS[c]);
+
+    // Trail as colored segments
+    for (let i = 0; i < trailX.length - 1; i++) {
+        const alpha = 0.3 + 0.7 * (i / trailX.length);
+        const c = trailColors[i + 1];
+        traces.push({
+            x: [trailX[i], trailX[i + 1]],
+            y: [trailY[i], trailY[i + 1]],
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: c, width: 2 + 2 * (i / trailX.length) },
+            opacity: alpha,
+            hoverinfo: 'skip',
+            showlegend: false,
+        });
+    }
+
+    // Marking events on trail
+    if (document.getElementById('show-marks').checked) {
+        const markX = [], markY = [];
+        for (let i = trailStart; i <= currentStep; i++) {
+            if (ep.is_marking[i]) {
+                markX.push(ep[`x_${cfg}`][i]);
+                markY.push(ep[`y_${cfg}`][i]);
+            }
+        }
+        if (markX.length > 0) {
+            traces.push({
+                x: markX, y: markY,
+                mode: 'markers',
+                type: 'scatter',
+                marker: {
+                    size: 14,
+                    color: 'rgba(255,255,255,0)',
+                    line: { color: '#ffdd57', width: 3 },
+                    symbol: 'circle-open',
+                },
+                hoverinfo: 'text',
+                hovertext: 'Marking event',
+                name: 'Marks',
+                showlegend: false,
+            });
+        }
+    }
+
+    // Cursor (current position)
+    const cx = ep[`x_${cfg}`][currentStep];
+    const cy = ep[`y_${cfg}`][currentStep];
+    const cc = COUNT_COLORS[ep.count[currentStep]];
+    traces.push({
+        x: [cx], y: [cy],
+        mode: 'markers',
+        type: 'scatter',
+        marker: { size: 16, color: cc, line: { color: 'white', width: 3 }, symbol: 'circle' },
+        hoverinfo: 'text',
+        hovertext: `Step ${currentStep}, count=${ep.count[currentStep]}, pred=${ep.prediction[currentStep]}`,
+        name: 'Cursor',
+        showlegend: false,
+    });
+
+    // Outer ring pulse if marking event at current step
+    if (ep.is_marking[currentStep]) {
+        traces.push({
+            x: [cx], y: [cy],
+            mode: 'markers',
+            type: 'scatter',
+            marker: { size: 30, color: 'rgba(255,221,87,0)', line: { color: '#ffdd57', width: 3 }, symbol: 'circle-open' },
+            hoverinfo: 'skip',
+            showlegend: false,
+        });
+    }
+
+    const configLabel = cfg === 'pca' ? 'PCA' : `UMAP (${cfg})`;
+    const layout = {
+        paper_bgcolor: '#1a1a2e',
+        plot_bgcolor: '#1a1a2e',
+        title: {
+            text: `Brain Map — ${configLabel} | Ep ${ep.id} (${ep.blob_count} blobs)`,
+            font: { color: '#e0e0e0', size: 16 },
+        },
+        xaxis: { showgrid: false, zeroline: false, showticklabels: false, color: '#444' },
+        yaxis: { showgrid: false, zeroline: false, showticklabels: false, color: '#444', scaleanchor: 'x' },
+        margin: { l: 20, r: 20, t: 50, b: 20 },
+        hovermode: 'closest',
+        dragmode: 'pan',
+    };
+
+    Plotly.react('umap-plot', traces, layout, {
+        displayModeBar: true,
+        modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
+        responsive: true,
+        scrollZoom: true,
+    });
+
+    updateInfoPanel();
+}
+
+function updateCursor() {
+    // Fast update: only re-render the cursor and trail traces
+    // For performance, we do a full re-render but Plotly.react is incremental
+    renderPlot();
+}
+
+// ─── Info Panel ────────────────────────────────────────────
+function updateInfoPanel() {
+    const ep = DATA.episodes[currentEpIdx];
+    const s = currentStep;
+
+    const count = ep.count[s];
+    const pred = ep.prediction[s];
+    const error = Math.abs(pred - count);
+    const reward = ep.reward[s];
+
+    document.getElementById('info-count').textContent = count;
+    document.getElementById('info-count').style.color = COUNT_COLORS[count];
+    document.getElementById('info-pred').textContent = pred.toFixed(2);
+    document.getElementById('info-pred').style.color = error < 0.5 ? '#2ca02c' : error < 1 ? '#ff7f0e' : '#d62728';
+    document.getElementById('info-error').textContent = error.toFixed(3);
+    document.getElementById('info-error').style.color = error < 0.5 ? '#2ca02c' : error < 1 ? '#ff7f0e' : '#d62728';
+    document.getElementById('info-reward').textContent = reward.toFixed(2);
+    document.getElementById('info-bot').textContent = `(${ep.bot_x[s].toFixed(2)}, ${ep.bot_y[s].toFixed(2)})`;
+    document.getElementById('info-step').textContent = `${ep.timestep[s]}`;
+    document.getElementById('time-display').textContent = `Step ${s} / ${ep.length - 1}`;
+
+    // Update pred chart cursor line
+    updatePredChartCursor();
+}
+
+// ─── Prediction Chart ──────────────────────────────────────
+function initPredChart() {
+    Plotly.newPlot('pred-chart', [], {
+        paper_bgcolor: '#16213e',
+        plot_bgcolor: '#16213e',
+        margin: { l: 30, r: 10, t: 5, b: 25 },
+        xaxis: { color: '#666', gridcolor: '#333', title: { text: 'step', font: { size: 10 } } },
+        yaxis: { color: '#666', gridcolor: '#333', range: [-0.5, 9], dtick: 2 },
+        hovermode: 'x',
+    }, { displayModeBar: false, responsive: true });
+}
+
+function updatePredChart() {
+    const ep = DATA.episodes[currentEpIdx];
+    const steps = ep.timestep;
+
+    const traces = [
+        {
+            x: steps, y: ep.count,
+            mode: 'lines', name: 'True count',
+            line: { color: '#4fc3f7', width: 2 },
+        },
+        {
+            x: steps, y: ep.prediction,
+            mode: 'lines', name: 'Prediction',
+            line: { color: '#ef5350', width: 1.5, dash: 'dot' },
+        },
+    ];
+
+    // Marking event markers
+    const markSteps = [], markCounts = [];
+    ep.is_marking.forEach((m, i) => {
+        if (m) { markSteps.push(steps[i]); markCounts.push(ep.count[i]); }
+    });
+    if (markSteps.length > 0) {
+        traces.push({
+            x: markSteps, y: markCounts,
+            mode: 'markers', name: 'Mark',
+            marker: { size: 6, color: '#ffdd57', symbol: 'diamond' },
+        });
+    }
+
+    Plotly.react('pred-chart', traces, {
+        paper_bgcolor: '#16213e',
+        plot_bgcolor: '#16213e',
+        margin: { l: 30, r: 10, t: 5, b: 25 },
+        xaxis: { color: '#666', gridcolor: '#333' },
+        yaxis: { color: '#666', gridcolor: '#333', range: [-0.5, 9], dtick: 2 },
+        showlegend: false,
+        hovermode: 'x',
+    }, { displayModeBar: false, responsive: true });
+}
+
+function updatePredChartCursor() {
+    const ep = DATA.episodes[currentEpIdx];
+    const stepVal = ep.timestep[currentStep];
+
+    Plotly.relayout('pred-chart', {
+        shapes: [{
+            type: 'line',
+            x0: stepVal, x1: stepVal,
+            y0: -0.5, y1: 9,
+            line: { color: 'rgba(255,255,255,0.4)', width: 1 },
+        }],
+    });
+}
+
+// ─── Start ─────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

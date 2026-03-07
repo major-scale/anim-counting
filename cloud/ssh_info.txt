@@ -1,0 +1,18 @@
+Pod: im9oumj50e1ohn
+SSH: ssh -p 20027 root@103.196.86.168
+Jobs: clean_baseline_s0, clean_randproj_s0
+Steps: 200K each (sequential)
+Est: ~2h total
+
+Check progress:
+  ssh -p 20027 root@103.196.86.168 "tail -5 /workspace/bridge/artifacts/checkpoints/clean_baseline_s0/metrics.jsonl"
+
+Download checkpoints:
+  scp -rP 20027 root@103.196.86.168:/workspace/bridge/artifacts/checkpoints/clean_baseline_s0 /workspace/bridge/artifacts/checkpoints/
+  scp -rP 20027 root@103.196.86.168:/workspace/bridge/artifacts/checkpoints/clean_randproj_s0 /workspace/bridge/artifacts/checkpoints/
+
+Download results:
+  scp -P 20027 root@103.196.86.168:/workspace/results/*.json /workspace/bridge/artifacts/
+
+Terminate:
+  python3 -c "import runpod; runpod.api_key='...'; runpod.terminate_pod('im9oumj50e1ohn')"
