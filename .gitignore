@@ -33,3 +33,6 @@ queue/
 
 # Sync staging (ephemeral)
 sync/
+
+# Private future plans (local only)
+docs/future/
