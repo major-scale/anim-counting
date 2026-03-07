@@ -34,5 +34,8 @@ queue/
 # Sync staging (ephemeral)
 sync/
 
+# JS/TS build artifacts (unused — everything is Python)
+dist/
+
 # Private future plans (local only)
 docs/future/
