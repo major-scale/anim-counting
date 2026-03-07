@@ -3,8 +3,7 @@ title: "Anim: Counting Emerges from Gathering"
 message: "If you use this work, please cite it as below."
 type: software
 authors:
-  - ***REMOVED***
-name: major-scale
+  - name: major-scale
   - name: Claude
     affiliation: Anthropic
 repository-code: https://github.com/major-scale/anim-counting
