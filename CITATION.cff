@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Anim: Counting Emerges from Gathering"
+title: "Anim: When Physics Determines Geometry"
 message: "If you use this work, please cite it as below."
 type: software
 authors:
@@ -8,25 +8,29 @@ authors:
     affiliation: Anthropic
 repository-code: https://github.com/major-scale/anim-counting
 license: MIT
-date-released: 2026-03-06
+date-released: 2026-03-13
 keywords:
   - world models
   - counting
   - number sense
   - DreamerV3
   - representation learning
-  - emergent behavior
-  - embodied cognition
-  - persistent homology
+  - representational geometry
+  - Hamming distance
+  - integration architecture
+  - critical periods
+  - VICReg
+  - cooperative plasticity
 abstract: >-
-  An AI system develops a geometrically precise internal number line
-  purely from observing objects being gathered one at a time.
-  No counting objective, no reward signal, no mathematical instruction.
-  A DreamerV3 world model trained on next-state prediction
-  spontaneously organizes its 512-dimensional hidden state into a
-  1D manifold with correct topology, uniform spacing, and ordinal
-  structure, verified through persistent homology, geodesic analysis,
-  and representational similarity analysis. The counting manifold is
-  robust across spatial arrangements, information ablations,
-  observation scrambling, alternative architectures, and
-  higher-dimensional worlds.
+  Same concept, different physics, different geometry. A DreamerV3
+  world model trained on grid-based counting develops a smooth 1D
+  manifold (GHE=0.33). The same architecture trained on binary
+  cascading counting develops a Hamming hypercube (GHE=4.91). The
+  FP Unifier architecture integrates both geometric structures through
+  frozen specialists, learned adapters, and a shared GRU integrator.
+  Key findings: information and geometry are separable (per-bit
+  accuracy stays 100% while geometric structure reorganizes completely),
+  late regularization on a consolidated substrate outperforms early
+  application (contradicting the critical periods framework), and
+  integration requires cooperative residual plasticity between
+  adapter and recurrent components.

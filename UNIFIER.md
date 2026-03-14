@@ -2,7 +2,7 @@
 
 **What happens when two different worlds teach the same concept?**
 
-In the [counting manifold paper](README.md), we showed that a DreamerV3 world model trained on a simple gathering task develops a geometrically precise number line in its hidden state &mdash; a smooth 1D arc with uniform spacing (GHE=0.33, RSA=0.98).
+In the [counting manifold paper](README.md) ([repo](https://github.com/major-scale/anim-counting)), we showed that a DreamerV3 world model trained on a simple gathering task develops a geometrically precise number line in its hidden state &mdash; a smooth 1D arc with uniform spacing (GHE=0.33, RSA=0.98).
 
 But what if the counting world used different physics?
 
@@ -11,6 +11,10 @@ We built a second world where counting works through **binary cascading** &mdash
 The world model's hidden state reveals a **completely different geometry**. Not a smooth manifold, but a structure organized by **Hamming distance** &mdash; the number of bit-flips between any two counts. Counts that differ by one bit (like 7 and 15, binary 0111 and 1111) are representationally closer than counts that differ by one in value but many bits (like 7 and 8, binary 0111 and 1000).
 
 Same architecture. Same training objective. Same concept. Different physics &rarr; different geometry.
+
+<p align="center">
+<img src="figures/type_a_vs_type_b.png" width="800" alt="PCA projections of hidden states: Type A smooth manifold vs Type B Hamming hypercube"/>
+</p>
 
 We then asked whether a single system could learn *both* geometric structures simultaneously. A simple combined environment fails &mdash; the more complex physics dominates completely. So we designed the **FP Unifier**, an architecture with two frozen specialist world models feeding through learned adapters into a shared integrator. The result: dual geometry, mechanistic insight into how representations integrate, and the finding that **information and geometry are separable** &mdash; a system can retain all knowledge while completely reorganizing how that knowledge is structured.
 
@@ -561,6 +565,12 @@ This project was built by **major-scale** and **Claude** (Anthropic) working tog
 - Benna &amp; Fusi (2016) &mdash; *Computational Principles of Synaptic Memory Consolidation.* Nature Neuroscience.
 - Dehaene (2011) &mdash; *The Number Sense.* Oxford University Press.
 - Carey (2009) &mdash; *The Origin of Concepts.* Oxford University Press.
+- Kriegeskorte, Mur &amp; Bandettini (2008) &mdash; *Representational Similarity Analysis &mdash; Connecting the Branches of Systems Neuroscience.* Frontiers in Systems Neuroscience.
+- Kornblith et al. (2019) &mdash; *Similarity of Neural Network Representations Revisited.* ICML 2019.
+- Eastwood &amp; Williams (2018) &mdash; *A Framework for the Quantitative Evaluation of Disentangled Representations.* ICLR 2018.
+- van den Oord, Li &amp; Vinyals (2018) &mdash; *Representation Learning with Contrastive Predictive Coding.* arXiv:1807.03748.
+- Geiger et al. (2021) &mdash; *Causal Abstractions of Neural Networks.* NeurIPS 2021.
+- Belinkov (2022) &mdash; *Probing Classifiers: Promises, Shortcomings, and Advances.* Computational Linguistics.
 
 ---
 

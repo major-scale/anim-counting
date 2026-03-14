@@ -164,6 +164,67 @@ def fig_erank_trajectory():
     print(f'  Saved {path}')
 
 
+# ─── Figure 4: Type A vs Type B PCA Projections ──────────────────────────────
+
+def fig_type_a_vs_type_b():
+    from sklearn.decomposition import PCA
+
+    # Grid counting baseline (Type A)
+    grid_path = '/workspace/bridge/artifacts/h_t_data/grid_baseline_seed0.npz'
+    grid_data = np.load(grid_path)
+    h_grid = grid_data['h_t']
+    c_grid = grid_data['counts']
+
+    # Binary counting baseline (Type B)
+    bin_path = os.path.join(ARTIFACTS_DIR, 'battery', 'binary_baseline_s0', 'battery.npz')
+    bin_data = np.load(bin_path)
+    h_bin = bin_data['h_t']
+    c_bin = bin_data['counts']
+
+    # Subsample for plotting clarity (5000 points each)
+    rng = np.random.RandomState(42)
+    n_plot = 5000
+
+    idx_g = rng.choice(len(h_grid), min(n_plot, len(h_grid)), replace=False)
+    idx_b = rng.choice(len(h_bin), min(n_plot, len(h_bin)), replace=False)
+
+    # PCA to 2D for each
+    pca_g = PCA(n_components=2).fit_transform(h_grid[idx_g])
+    pca_b = PCA(n_components=2).fit_transform(h_bin[idx_b])
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- Type A: Grid counting manifold ---
+    max_g = int(c_grid[idx_g].max())
+    sc1 = ax1.scatter(pca_g[:, 0], pca_g[:, 1], c=c_grid[idx_g],
+                       cmap='viridis', s=6, alpha=0.6, vmin=0, vmax=max_g)
+    ax1.set_title('Type A: Smooth Manifold\n(grid counting, GHE=0.33)', fontsize=13, fontweight='bold')
+    ax1.set_xlabel('PC1', fontsize=11)
+    ax1.set_ylabel('PC2', fontsize=11)
+    cb1 = fig.colorbar(sc1, ax=ax1, shrink=0.8, label='Count')
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+
+    # --- Type B: Binary Hamming hypercube ---
+    max_b = int(c_bin[idx_b].max())
+    sc2 = ax2.scatter(pca_b[:, 0], pca_b[:, 1], c=c_bin[idx_b],
+                       cmap='plasma', s=6, alpha=0.6, vmin=0, vmax=max_b)
+    ax2.set_title('Type B: Hamming Hypercube\n(binary counting, GHE=4.91)', fontsize=13, fontweight='bold')
+    ax2.set_xlabel('PC1', fontsize=11)
+    ax2.set_ylabel('PC2', fontsize=11)
+    cb2 = fig.colorbar(sc2, ax=ax2, shrink=0.8, label='Count')
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+
+    fig.suptitle('Same Concept, Different Physics → Different Geometry',
+                 fontsize=15, fontweight='bold', y=1.02)
+    fig.tight_layout()
+    path = os.path.join(FIGURES_DIR, 'type_a_vs_type_b.png')
+    fig.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f'  Saved {path}')
+
+
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
@@ -171,4 +232,5 @@ if __name__ == '__main__':
     fig_ghe_comparison()
     fig_lambda_phase_transition()
     fig_erank_trajectory()
+    fig_type_a_vs_type_b()
     print('Done.')
