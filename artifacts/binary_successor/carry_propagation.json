@@ -1,0 +1,205 @@
+{
+  "environment_carry_mechanism": {
+    "type": "multi-timestep cascade",
+    "steps_per_phase": 2,
+    "phases": [
+      "entering",
+      "merging",
+      "carrying"
+    ],
+    "full_cascade_steps": "14-16",
+    "note": "Carry propagates visibly over multiple observation timesteps. Count recomputed from column occupancy each step."
+  },
+  "timing_summary": [
+    {
+      "transition": "0\u21921",
+      "carry_depth": 0,
+      "bits_changing": 1,
+      "crossing_times": {
+        "0": -0.5459087057999921
+      },
+      "span": 0.0
+    },
+    {
+      "transition": "1\u21922",
+      "carry_depth": 1,
+      "bits_changing": 2,
+      "crossing_times": {
+        "0": -2.472513484090564,
+        "1": -0.5115755337057778
+      },
+      "span": 1.960937950384786
+    },
+    {
+      "transition": "3\u21924",
+      "carry_depth": 2,
+      "bits_changing": 3,
+      "crossing_times": {
+        "0": -6.458343861347158,
+        "1": -2.513672476842879,
+        "2": -0.4871185720778929
+      },
+      "span": 5.971225289269265
+    },
+    {
+      "transition": "7\u21928",
+      "carry_depth": 3,
+      "bits_changing": 4,
+      "crossing_times": {
+        "0": -10.44735798392352,
+        "1": -6.444246364060819,
+        "2": -2.5392603703811987,
+        "3": -0.49225460568668067
+      },
+      "span": 9.95510337823684
+    },
+    {
+      "transition": "4\u21925",
+      "carry_depth": 0,
+      "bits_changing": 1,
+      "crossing_times": {
+        "0": -0.5338451502993304
+      },
+      "span": 0.0
+    },
+    {
+      "transition": "8\u21929",
+      "carry_depth": 0,
+      "bits_changing": 1,
+      "crossing_times": {
+        "0": -0.5325892808071622
+      },
+      "span": 0.0
+    },
+    {
+      "transition": "11\u219212",
+      "carry_depth": 2,
+      "bits_changing": 3,
+      "crossing_times": {
+        "0": -6.464347207527251,
+        "1": -2.4893306351624727,
+        "2": -0.48318395698965244
+      },
+      "span": 5.981163250537598
+    }
+  ],
+  "carry_stops_here": {
+    "0_1": {
+      "count_from": 0,
+      "count_to": 1,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 0,
+      "mean_max_deviation": 0.013312142226136654,
+      "n_instances": 15
+    },
+    "10_11": {
+      "count_from": 10,
+      "count_to": 11,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 1,
+      "mean_max_deviation": 0.03409528939399154,
+      "n_instances": 15
+    },
+    "11_12": {
+      "count_from": 11,
+      "count_to": 12,
+      "carry_depth": 2,
+      "non_participating_bit": 3,
+      "expected_state": 1,
+      "mean_max_deviation": 0.02430979963108769,
+      "n_instances": 15
+    },
+    "12_13": {
+      "count_from": 12,
+      "count_to": 13,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 0,
+      "mean_max_deviation": 0.007273084735505332,
+      "n_instances": 15
+    },
+    "13_14": {
+      "count_from": 13,
+      "count_to": 14,
+      "carry_depth": 1,
+      "non_participating_bit": 2,
+      "expected_state": 1,
+      "mean_max_deviation": 0.016239144716713536,
+      "n_instances": 15
+    },
+    "1_2": {
+      "count_from": 1,
+      "count_to": 2,
+      "carry_depth": 1,
+      "non_participating_bit": 2,
+      "expected_state": 0,
+      "mean_max_deviation": 0.029809350324580302,
+      "n_instances": 15
+    },
+    "2_3": {
+      "count_from": 2,
+      "count_to": 3,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 1,
+      "mean_max_deviation": 0.03436422282711379,
+      "n_instances": 15
+    },
+    "3_4": {
+      "count_from": 3,
+      "count_to": 4,
+      "carry_depth": 2,
+      "non_participating_bit": 3,
+      "expected_state": 0,
+      "mean_max_deviation": 0.03232110157155546,
+      "n_instances": 15
+    },
+    "4_5": {
+      "count_from": 4,
+      "count_to": 5,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 0,
+      "mean_max_deviation": 0.0110371177629965,
+      "n_instances": 15
+    },
+    "5_6": {
+      "count_from": 5,
+      "count_to": 6,
+      "carry_depth": 1,
+      "non_participating_bit": 2,
+      "expected_state": 1,
+      "mean_max_deviation": 0.02594005292129792,
+      "n_instances": 15
+    },
+    "6_7": {
+      "count_from": 6,
+      "count_to": 7,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 1,
+      "mean_max_deviation": 0.030259973102402218,
+      "n_instances": 15
+    },
+    "8_9": {
+      "count_from": 8,
+      "count_to": 9,
+      "carry_depth": 0,
+      "non_participating_bit": 1,
+      "expected_state": 0,
+      "mean_max_deviation": 0.010770894263108491,
+      "n_instances": 15
+    },
+    "9_10": {
+      "count_from": 9,
+      "count_to": 10,
+      "carry_depth": 1,
+      "non_participating_bit": 2,
+      "expected_state": 0,
+      "mean_max_deviation": 0.017084951407239417,
+      "n_instances": 15
+    }
+  }
+}
