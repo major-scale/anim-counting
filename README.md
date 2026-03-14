@@ -304,12 +304,14 @@ Source: `artifacts/reports/replication_summary.json`
 
 To confirm the manifold is learned (not an artifact of the architecture), we ran an untrained DreamerV3 (random weights) on the exact same observation stream as a trained model:
 
-| Metric      | Trained | Untrained | Interpretation                  |
-| :---------- | :-----: | :-------: | :------------------------------ |
-| GHE         |  0.281  |   0.395   | Spacing less uniform            |
-| Arc R&sup2; |  0.998  |   0.985   | Slight ordering degradation     |
-| RSA         |  0.982  |   0.591   | **Ordinal structure collapses** |
-| PCA PC1     |  73.0%  |   23.0%   | **No dominant counting axis**   |
+| Metric                  | Trained | Untrained | Interpretation                               |
+| :---------------------- | :-----: | :-------: | :------------------------------------------- |
+| Probe R&sup2; (episode CV) |  0.993  |   0.120   | **Counting is learned, not architectural**    |
+| Probe SNR               |   625   |   0.31    | **2000&times; gap in signal concentration**   |
+| GHE                     |  0.281  |   0.395   | Spacing less uniform                         |
+| Arc R&sup2;             |  0.998  |   0.985   | Slight ordering degradation                  |
+| RSA                     |  0.982  |   0.591   | **Ordinal structure collapses**              |
+| PCA PC1                 |  73.0%  |   23.0%   | **No dominant counting axis**                |
 
 The table understates the gap. Visualizing all 117,212 hidden states (not just centroids) makes the difference visceral:
 
@@ -319,7 +321,9 @@ The table understates the gap. Visualizing all 117,212 hidden states (not just c
 
 **Figure 4: Trained vs. untrained &mdash; the same 117K hidden states projected three ways.** Top row: the trained model's states trace color-ordered arcs (count encoded as color, low&rarr;high = dark&rarr;light). Bottom row: the untrained model's states scatter like confetti &mdash; a uniform cloud with no count structure (r&sup2; &lt; 0.01 across all three projection methods). Both models saw identical observations. The structure is a product of learning, not of the data format or architecture.
 
-Source: `artifacts/h_t_data/untrained_comparison.json`
+Source: `artifacts/h_t_data/untrained_comparison.json`, `artifacts/h_t_data/random_baseline_full.json`
+
+**A note on probe reliability.** Subsequent work on multi-specialist world models &mdash; combining counting and binary representations in a unified architecture &mdash; revealed that linear probe R&sup2; is not universally reliable as evidence of learned structure. In experiments where the target signal is distributed across many observation dimensions (such as a 4-bit binary register where count information is spread across 72 correlated dimensions), random untrained RSSMs score nearly as well as trained ones on probe R&sup2;. The counting task is different: the count signal occupies just 2 of 82 observation dimensions, requiring the model to actively extract and concentrate it. This is why the trained/untrained gap is so large here (R&sup2;: 0.993 vs 0.120; episode-level cross-validation with held-out episodes, not in-sample). For tasks where probe R&sup2; may be inflated, we developed a three-tier evaluation protocol (raw observations &rarr; random RSSM &rarr; trained RSSM) and identified metrics that survive random baseline controls: rollout divergence, MDL compression, exact count accuracy, topology, and RSA direction. Details in forthcoming work on the FP unifier architecture.
 
 ### The Ablation Cascade
 
@@ -432,7 +436,7 @@ This means 95.6% of counting information is carried in the model's accumulated t
 | Claim                           | Evidence                                                             | Strength                |
 | :------------------------------ | :------------------------------------------------------------------- | :---------------------- |
 | Number line emerges             | 5 seeds, GHE 0.329&plusmn;0.027, unanimous topology                  | Strong (replicated)     |
-| Manifold is learned             | Untrained RSA degrades 0.982&rarr;0.591                              | Strong (controlled)     |
+| Manifold is learned             | Untrained probe R&sup2; 0.993&rarr;0.120, RSA 0.982&rarr;0.591       | Strong (controlled)     |
 | Robust to info removal          | 3 conditions &times; 3 seeds, max GHE 0.367                          | Strong (replicated)     |
 | Architecture independent        | LSTM, MLP, MLP-nocount all &beta;<sub>0</sub>=1 &beta;<sub>1</sub>=0 | Moderate (single seeds) |
 | Spacing is linear, not log      | Weber-Fechner R&sup2; = 0.017                                        | Strong                  |
