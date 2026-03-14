@@ -73,11 +73,92 @@ The representation didn't choose one geometry for philosophical reasons. The wor
 
 **Figure 1: Geodesic Homogeneity Error across three world types.** Lower GHE means the representation spacing better matches a smooth decimal number line. The grid world (Type A) produces near-perfect spacing. The binary world (Type B) does not &mdash; its geometry follows Hamming distance, not decimal distance. The combined world is worst of all.
 
+### The binary successor function
+
+In the counting manifold, "+1" is a smooth rotation through 512-dimensional space &mdash; 11 PCA components for 90% variance, uniform step size, continuous arc. What does "+1" look like when the physical mechanism is binary cascading?
+
+We computed step vectors (centroid<sub>n+1</sub> &minus; centroid<sub>n</sub>) for all 14 transitions and found that the model has precisely internalized the cascade mechanism.
+
+**Step magnitude scales with carry depth (r=0.98).**
+
+| Carry depth | Example transitions | Mean magnitude | Std | n |
+| :--: | :-- | :--: | :--: | :--: |
+| 0 (simple flip) | 0&rarr;1, 2&rarr;3, 4&rarr;5, 6&rarr;7, 8&rarr;9, 10&rarr;11, 12&rarr;13 | 5.86 | 0.15 | 7 |
+| 1 (1-bit carry) | 1&rarr;2, 5&rarr;6, 9&rarr;10, 13&rarr;14 | 7.28 | 0.23 | 4 |
+| 2 (2-bit carry) | 3&rarr;4, 11&rarr;12 | 8.58 | 0.34 | 2 |
+| 3 (full cascade) | 7&rarr;8 | 9.40 | &mdash; | 1 |
+
+Every simple flip looks the same to the model (CV=0.025). Every single-carry looks the same. The representational displacement isn't approximate &mdash; it scales almost perfectly with the number of bits that physically flip.
+
+<p align="center">
+  <img src="figures/binary_step_magnitude.png" alt="Step magnitude by transition, colored by carry depth" width="85%">
+</p>
+
+**Figure 5: Binary successor step magnitudes.** Each bar is one count transition. Color indicates carry depth. The staircase pattern &mdash; green baseline, blue steps, orange jumps, red peak at 7&rarr;8 &mdash; is the cascade mechanism directly visible in the representation.
+
+**Step vectors decompose linearly into four independent bit-flip directions.**
+
+We trained per-bit linear probes and projected each step vector onto the four probe weight directions:
+
+| Transition | Bit0 (1s) | Bit1 (2s) | Bit2 (4s) | Bit3 (8s) | Expected |
+| :-- | :--: | :--: | :--: | :--: | :-- |
+| 0&rarr;1 | **+1.506** | &minus;0.002 | &minus;0.001 | &minus;0.001 | +000 |
+| 1&rarr;2 | **&minus;1.506** | **+1.498** | +0.000 | &minus;0.001 | &minus;+00 |
+| 3&rarr;4 | &minus;1.403 | **&minus;1.437** | **+1.458** | +0.002 | &minus;&minus;+0 |
+| 7&rarr;8 | **&minus;1.354** | **&minus;1.363** | **&minus;1.415** | **+1.649** | &minus;&minus;&minus;+ |
+
+Sign agreement: **25/25 (100%)** across all changed bits in all transitions. Cross-talk for unchanged bits: ~0.001. The model has discovered four orthogonal "bit-flip" axes in 512-dimensional space and composes them linearly to represent any transition. It independently invented a coordinate system for binary arithmetic.
+
+**Transitions group by carry type, not by count value.**
+
+The cosine similarity matrix between all 14 step vectors reveals two distinct operational modes:
+
+| Comparison | Mean cosine similarity |
+| :-- | :--: |
+| Within depth-0 (simple flips) | +0.631 |
+| Within depth-1 (1-bit carries) | +0.842 |
+| Within depth-2 (2-bit carries) | +0.861 |
+| Depth-0 vs depth-1 | **&minus;0.504** |
+| Depth-0 vs depth-2 | **&minus;0.471** |
+
+Simple flips and carries point in **nearly opposite directions** in 512-d space. Within-carry transitions cluster tightly. The model doesn't just predict what comes next &mdash; it represents *what kind of computational event* is happening.
+
+**The model anticipates carries from the current bit state.**
+
+We measured how early the hidden state begins shifting toward the next count's representation:
+
+| Carry depth | Anticipation onset | Std |
+| :--: | :--: | :--: |
+| 0 (simple flip) | 18.3 timesteps | 9.6 |
+| 1 (1-bit carry) | 2.8 timesteps | 0.5 |
+| 2 (2-bit carry) | 5.5 timesteps | 0.5 |
+| 3 (full cascade) | 8.4 timesteps | 0.5 |
+
+Simple flips have the longest, most gradual anticipation &mdash; the model sees the bot approaching and smoothly prepares. Carries are abrupt (std 0.5). But within carries, deeper cascades start earlier: the model looks at the current bit state (0111), recognizes that the next increment will be a full cascade, and begins preparing ~8 timesteps out. It doesn't react to carries &mdash; it predicts them.
+
+<p align="center">
+  <img src="figures/binary_anticipation.png" alt="Anticipation trajectories by carry depth" width="85%">
+</p>
+
+**Figure 6: Anticipation of count transitions.** Normalized projection onto the step vector direction in the 30 timesteps before each transition. Depth-0 (green) shows gradual preparation with high variance. Carries (blue, orange, red) are sharp late jumps, but deeper cascades begin preparing earlier.
+
+**Comparison with the grid specialist:**
+
+| Property | Grid specialist | Binary specialist |
+| :-- | :--: | :--: |
+| PCA components for 90% | 11 | **5** |
+| Step magnitude CV | 0.21 | **0.18** |
+| Max/min magnitude ratio | ~1.5&times; | **1.69&times;** |
+| Factoring structure | Smooth rotation | **4-bit linear decomposition** |
+| Anticipation pattern | Proportional to distance | **Carry-depth dependent** |
+
+The binary successor is structurally simpler (5 vs 11 components) because it decomposes into exactly 4 orthogonal bit-flip directions plus a shared magnitude axis. The grid successor needs 11 components because it's a smooth rotation through high-dimensional space with no discrete decomposition. Both arise from pure next-state prediction.
+
 ### The (7,8) residual
 
-One detail tells the whole story. Hamming distance predicts that 7 (0111) and 8 (1000) should be maximally distant &mdash; they differ in all 4 bits. And they are far apart. But they're slightly closer than pure Hamming geometry predicts, because they're temporally adjacent &mdash; the model sees 7 transition to 8 every single episode. Two organizing principles coexist: Hamming geometry dominates, but temporal adjacency exerts a secondary pull.
+One detail connects the successor analysis to the global geometry. Hamming distance predicts that 7 (0111) and 8 (1000) should be maximally distant &mdash; they differ in all 4 bits. And they are far apart. But they're slightly closer than pure Hamming geometry predicts, because they're temporally adjacent &mdash; the model sees 7 transition to 8 every single episode. Two organizing principles coexist: Hamming geometry dominates, but temporal adjacency exerts a secondary pull. The anticipation analysis confirms this &mdash; the model starts preparing for the 7&rarr;8 cascade 8 timesteps in advance, creating a representational trajectory that brings the two states slightly closer than their Hamming distance would predict.
 
-Step vectors (how the hidden state changes at each count transition) cluster by carry depth. A simple increment (no carry) produces a small step. A full carry cascade (like 7&rarr;8, flipping all 4 bits) produces a large step in a different direction. The model has internalized the physical mechanism of binary counting, not just the outcomes.
+Source: `artifacts/binary_successor/successor_analysis.json`
 
 ### The first key insight
 
@@ -525,6 +606,7 @@ The model knows the count is the same regardless of format. The geometric domina
 | Claim | Evidence | Strength |
 | :-- | :-- | :-- |
 | Different physics &rarr; different geometry | GHE 0.33 (grid) vs 4.91 (binary), RSA comparison | Strong |
+| Binary successor = composed bit-flips | r=0.98 carry&harr;magnitude, 100% sign agreement, 4 orthogonal axes | Strong (15 episodes) |
 | Binary dominates combined | GHE 0.33&rarr;4.91&rarr;12.1 progression | Strong |
 | FP unifier encodes both | Dual RSA (0.410/0.265), per-bit 100%, R&sup2;=0.988 | Strong |
 | Count is causally active | 84.2% directional IIA on 8D, null control passes | Moderate (single seed) |
