@@ -16,9 +16,9 @@ Same architecture. Same training objective. Same concept. Different physics &rar
 <img src="figures/type_a_vs_type_b.png" width="800" alt="PCA projections of hidden states: Type A smooth manifold vs Type B Hamming hypercube"/>
 </p>
 
-We then asked whether a single system could learn *both* geometric structures simultaneously. A simple combined environment fails &mdash; the more complex physics dominates completely. So we designed the **FP Unifier**, an architecture with two frozen specialist world models feeding through learned adapters into a shared integrator. The result: dual geometry, mechanistic insight into how representations integrate, and the finding that **information and geometry are separable** &mdash; a system can retain all knowledge while completely reorganizing how that knowledge is structured.
+We then asked whether a single system could learn *both* geometric structures simultaneously. A simple combined environment fails &mdash; the more complex physics dominates completely. So we designed the **FP Unifier**, an architecture with two frozen specialist world models feeding through learned adapters into a shared integrator. The result: dual geometry, mechanistic insight into how representations integrate, and the finding that **task accuracy and representational geometry are separable** &mdash; a system can retain all knowledge while completely reorganizing how that knowledge is structured.
 
-Along the way, we found that the timing and mechanism of integration reveal dynamics relevant far beyond counting: contrastive alignment actively entangles structures it's meant to integrate, brief late regularization on a consolidated substrate outperforms both early and continuous application (contradicting the well-cited critical periods framework), and the integration requires cooperative plasticity between components &mdash; a phenomenon predicted by established mathematics but unnamed in the literature.
+Along the way, we found that the timing and mechanism of integration reveal dynamics relevant far beyond counting: contrastive alignment actively entangles structures it's meant to integrate, brief late regularization on a consolidated substrate outperforms both early and continuous application (extending the well-cited critical periods framework to modular architectures, where the prediction does not hold), and the integration requires cooperative plasticity between components &mdash; a phenomenon predicted by established mathematics but unnamed in the literature.
 
 ---
 
@@ -196,7 +196,7 @@ Source: `artifacts/checkpoints/unifier_s0/validation_corrected.npz`
 
 We ran a systematic ablation suite to understand the mechanism of dual-geometry integration. Four experiments, each revealing a different aspect of how representations integrate.
 
-### 1. Information &ne; Geometry (Contrastive Weight Sweep)
+### 1. Accuracy &ne; Geometry (Contrastive Weight Sweep)
 
 We trained the unifier at 7 contrastive alignment weights (&lambda; = 0, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2):
 
@@ -214,11 +214,13 @@ We trained the unifier at 7 contrastive alignment weights (&lambda; = 0, 0.005, 
   <img src="figures/lambda_phase_transition.png" alt="Phase transition: pR² Hamming drops while per-bit stays 100%" width="85%">
 </p>
 
-**Figure 2: The information-geometry dissociation.** As contrastive alignment (&lambda;) increases from zero, Hamming geometric structure (blue, pR&sup2;) collapses abruptly at &lambda;=0.005. But per-bit decoding accuracy (orange) stays at 100% across the entire range. The model retains all binary knowledge while completely reorganizing how that knowledge is geometrically arranged.
+**Figure 2: The accuracy-geometry dissociation.** As contrastive alignment (&lambda;) increases from zero, Hamming geometric structure (blue, pR&sup2;) collapses abruptly at &lambda;=0.005. But per-bit decoding accuracy (orange) stays at 100% across the entire range. The model retains all binary knowledge while completely reorganizing how that knowledge is geometrically arranged.
 
 The phase transition at &lambda;=0.005 is the key finding. At &lambda;=0 (no alignment), Hamming geometry is faithfully preserved (pR&sup2;=0.572) &mdash; the binary specialist's structure passes through. At &lambda;=0.005, Hamming geometric structure collapses to pR&sup2;=0.008 &mdash; but **per-bit accuracy stays at 100%**. The model retains all four binary bits as decodable information while completely reorganizing the geometric relationship between count states.
 
-**Information is retained. Geometry is changed.** The contrastive loss doesn't erase knowledge &mdash; it changes the organizational principle. This dissociation held across every subsequent experiment: per-bit accuracy at 100% regardless of contrastive weight, VICReg timing, adapter configuration, or GRU freezing. Information content and geometric organization are formally independent &mdash; the most consistent finding across conditions.
+**Accuracy is retained. Geometry is changed.** The contrastive loss doesn't erase knowledge &mdash; it changes the organizational principle. This dissociation held across every subsequent experiment: per-bit accuracy at 100% regardless of contrastive weight, VICReg timing, adapter configuration, or GRU freezing. Task accuracy and geometric organization are formally independent &mdash; the most consistent finding across conditions.
+
+The general principle that task accuracy and representational geometry are separable has precedent in neuroscience &mdash; Fascianelli et al. (*Nature Communications*, 2024) demonstrated that two monkeys performing the same task at the same accuracy level exhibited strikingly different representational geometries in prefrontal cortex. Our contribution is a controlled demonstration in a computational system where the geometric structure can be systematically manipulated through training interventions, revealing the specific mechanisms (contrastive entanglement, VICReg dimensional expansion) that determine which geometry emerges.
 
 Source: `artifacts/sweep_results/results.json`
 
@@ -245,7 +247,7 @@ Source: `artifacts/checkpoints/unifier_vicreg_s0/eval_results.json`
 
 ### 3. Late Imprinting Dominates
 
-If the VICReg window acts as an imprinting period, when does it matter most? The well-cited critical learning periods literature (Achille et al., ICLR 2019; Golatkar et al., NeurIPS 2019) predicts that early training is uniquely formative. Golatkar et al. specifically showed that "applying regularization only after the initial transient has no effect at all."
+If the VICReg window acts as an imprinting period, when does it matter most? The well-cited critical learning periods literature (Achille et al., ICLR 2019; Golatkar et al., NeurIPS 2019) predicts that early training is uniquely formative. Golatkar et al. specifically showed that applying regularization only after the initial transient produces a generalization gap as large as if regularization were never applied.
 
 We tested onset timing: VICReg active at steps 0&ndash;400 (early) vs steps 5000&ndash;5400 (late), keeping everything else identical.
 
@@ -254,15 +256,15 @@ We tested onset timing: VICReg active at steps 0&ndash;400 (early) vs steps 5000
 | Step 0 | 0.812 | 0.405 | 0.203 | 0.041 | 99.8% | 6.8 | 0.14 | 0.14 |
 | **Step 5000** | **0.845** | **0.552** | **0.569** | **0.030** | **100%** | **9.1** | **0.21** | **0.21** |
 
-Late VICReg wins on *every metric*. This directly inverts the critical periods prediction.
+Late VICReg wins on *every metric*. This result extends the critical periods framework to modular architectures, where the prediction does not hold.
 
 The explanation involves the GRU's learning dynamics. By step 5000, the GRU's update gates have dropped from 0.491 to approximately 0.05 &mdash; the GRU is barely updating its hidden state. It has consolidated into a slow temporal integrator. When VICReg fires on this consolidated substrate, the pressure can't reshape the GRU (it's effectively frozen), so it routes entirely through the adapters. The adapters grow larger (&alpha;&asymp;0.21 vs 0.14 for early VICReg), giving specialist information more geometric influence over the unified representation.
 
 Early VICReg, by contrast, fires while the GRU is still plastic. The GRU absorbs the variance pressure, the adapters stay small, and you get a compromise &mdash; decent temporal dynamics, decent geometry, but neither is optimal. Worse, the early VICReg boost is transient: Hamming metrics peak at step 3200 then decay through the rest of training.
 
-Why does this contradict Golatkar et al.? Three reasons, each independently sufficient. First, the architecture has **differential plasticity** &mdash; the GRU and adapters have very different effective learning rates by step 5000, unlike the homogeneous networks Golatkar tested. Second, VICReg is a **geometric regularizer** operating on representational structure, not a parameter-level regularizer like weight decay. Third, the **modular architecture** creates spatially separated consolidation and adaptation &mdash; the components that consolidated (GRU) are different from the ones being adapted (adapters). Golatkar's result holds for homogeneous feedforward networks with parameter-level regularizers. This architecture is none of those things.
+Why doesn't Golatkar et al.'s prediction hold here? Three reasons, each independently sufficient. First, the architecture has **differential plasticity** &mdash; the GRU and adapters have very different effective learning rates by step 5000, unlike the homogeneous networks Golatkar tested. Second, VICReg is a **geometric regularizer** operating on representational structure, not a parameter-level regularizer like weight decay. Third, the **modular architecture** creates spatially separated consolidation and adaptation &mdash; the components that consolidated (GRU) are different from the ones being adapted (adapters). Golatkar's result holds for homogeneous feedforward networks with parameter-level regularizers. This architecture is none of those things, which is why it extends the critical periods framework rather than contradicting it.
 
-This finding is directly relevant to multi-modal fusion: instead of continuously applying alignment pressure (which degrades geometry, as the contrastive sweep showed), brief late alignment on a consolidated backbone produces superior outcomes. HASTE (NeurIPS 2025 poster) demonstrated that early-then-stop alignment outperforms continuous alignment in diffusion models. Our result goes further: late-onset outperforms early-onset, a claim not made by any prior work we have found.
+This finding is directly relevant to multi-modal fusion: instead of continuously applying alignment pressure (which degrades geometry, as the contrastive sweep showed), brief late alignment on a consolidated backbone produces superior outcomes. HASTE (NeurIPS 2025 poster) demonstrated that early-then-stop *representation alignment* (knowledge distillation from a frozen teacher) outperforms continuous alignment in diffusion models. Our result goes further: late-onset outperforms early-onset, a claim not made by any prior work we have found.
 
 Replication: we reran both conditions on a separate GPU. Direction preserved &mdash; onset-5000 still wins on all key metrics (RSA ordinal 0.772 vs 0.801, RSA Hamming 0.539 vs 0.432). Magnitudes shift between runs, motivating multi-seed validation as future work.
 
@@ -297,13 +299,13 @@ Hamming geometry &mdash; the fragile one, the structure that conflicts with the 
 
 The mechanism is cooperative: adapters propose geometric structure through their weights, and the GRU's residual plasticity (~5% gate updates) integrates that signal into a coherent high-dimensional code. Freeze the GRU and it becomes a one-way broadcast &mdash; adapters talk, but the dynamics can't respond.
 
-**The theoretical explanation is surprisingly deep.** A frozen GRU's connectivity rank rigidly sets the dimensionality ceiling of its dynamics (Mastrogiuseppe and Ostojic, *Neuron*, 2018). VICReg-boosted adapters push stronger, more varied signals into the frozen GRU, but stronger inputs paradoxically *compress* dynamics further by driving neurons into saturation (Rajan, Abbott, and Sompolinsky, *Physical Review E*, 2010; Engelken, Wolf, and Abbott, *Physical Review Research*, 2023). The unfrozen GRU escapes this trap because its weight updates can expand the connectivity rank, lifting the dimensionality ceiling.
+**The theoretical explanation is surprisingly deep.** In continuous-rate recurrent neural networks, the rank of structured connectivity constrains the dimensionality of emergent dynamics (Mastrogiuseppe and Ostojic, *Neuron*, 2018). While their analysis applies to sigmoidal networks rather than gated architectures like GRUs, the principle is analogous: a frozen recurrent network's fixed weights impose a ceiling on representational dimensionality that new inputs cannot breach. VICReg-boosted adapters push stronger, more varied signals into the frozen GRU, but stronger inputs paradoxically *compress* dynamics further by driving neurons into saturation (Rajan, Abbott, and Sompolinsky, *Physical Review E*, 2010; Engelken, Wolf, and Abbott, *Physical Review Research*, 2023). The unfrozen GRU escapes this trap because its weight updates can expand the effective connectivity rank, lifting the dimensionality ceiling.
 
-Two-timescale stochastic approximation theory (Borkar, 1997) proves this discontinuity is **generic**: in any coupled system with a slow and fast component, setting the slow component's learning rate to exactly zero is a *singular limit* &mdash; qualitatively different from merely approaching zero. The transition from learning rate &asymp; 0&plus; to learning rate = 0 is not smooth. It's a phase transition. This is not architecture-specific; it's a mathematical property of coupled learning systems.
+Two-timescale stochastic approximation theory (Borkar, 1997) provides the formal framework: when two coupled processes update at different rates, the analysis proceeds by treating the slow process as quasi-static from the fast process's perspective. The critical insight is that the limit where the slow process's learning rate *approaches* zero (maintaining two-timescale coupling) is qualitatively different from setting it to *exactly* zero (collapsing to single-timescale dynamics). This is a degenerate case in the sense of singular perturbation theory &mdash; the &epsilon;&rarr;0 limit of a two-timescale system is not equivalent to the &epsilon;=0 system. Our observation &mdash; that a GRU with 5% gate updates behaves qualitatively differently from a fully frozen GRU &mdash; is consistent with this discontinuity.
 
-We call this phenomenon **cooperative residual plasticity**. An extensive literature search confirmed that it has not been previously named or unified as a concept, despite being independently predicted by attractor dynamics theory, two-timescale optimization, and observed in at least five biological systems (Benna-Fusi synaptic cascades, sleep consolidation, complementary learning systems, synaptic tagging, neuromodulatory gating). MIST (2025) independently found that updating fewer than 0.5% of backbone parameters improves adapter learning across benchmarks &mdash; consistent with our finding but without the theoretical framework.
+We call this phenomenon **cooperative residual plasticity**. An extensive literature search confirmed that it has not been previously named or unified as a concept, despite being independently predicted by attractor dynamics theory, two-timescale optimization, and observed in at least five biological systems (Benna-Fusi synaptic cascades, sleep consolidation, complementary learning systems, synaptic tagging, neuromodulatory gating). MIST (2025) independently found that updating fewer than 0.5% of backbone parameters improves adapter learning across benchmarks &mdash; consistent with our finding but without the theoretical framework. SLCA (Zhang et al., ICCV 2023) demonstrated the core empirical observation in continual learning: slow backbone learning rates dramatically outperform frozen backbones, with improvements up to 50 percentage points on standard benchmarks. Our contribution beyond SLCA is threefold: the theoretical framing connecting the observation to two-timescale optimization and attractor dynamics, the biological grounding across five independent systems, and the specific demonstration in a modular world-model architecture where the effect manifests as representational dimensionality collapse.
 
-This has potential implications for parameter-efficient fine-tuning, where the standard practice is fully frozen backbones. Our result suggests there is a phase transition at exactly zero backbone learning rate that the field has been stepping over. Whether the effect scales to large transformers on standard benchmarks remains an open question &mdash; we demonstrate it in one architecture at one scale.
+This has potential implications for parameter-efficient fine-tuning, where the standard practice is fully frozen backbones. Our result is consistent with a discontinuity at exactly zero backbone learning rate. Whether the effect scales to large transformers on standard benchmarks remains an open question &mdash; we demonstrate it in one architecture at one scale.
 
 Source: `scripts/subspace_results/erank_trajectory.json`
 
@@ -343,7 +345,7 @@ Across every experiment, every alignment condition, every VICReg timing, every a
 
 2. **The unifier genuinely integrates.** CKA asymmetry as low as 0.013 means it draws from both specialists nearly equally &mdash; not collapsing to whichever is easier.
 
-3. **Information content and geometric organization are independent.** You can reshape the geometry dramatically (ordinal-dominant, Hamming-dominant, balanced) and information content doesn't change. Content and structure are formally separable.
+3. **Task accuracy and geometric organization are independent.** You can reshape the geometry dramatically (ordinal-dominant, Hamming-dominant, balanced) and task accuracy doesn't change. Content and structure are formally separable.
 
 4. **The integration is controllable and stable.** VICReg timing, contrastive weight, and architectural choices provide precise control over the resulting geometry. The unifier isn't a black box &mdash; its representational structure responds predictably to training interventions.
 
@@ -377,9 +379,9 @@ The counting manifold paper's probe R&sup2;=0.993 vs 0.120 untrained is valid be
 
 **No rollout divergence for the unifier.** The counting and classification experiments included rollout divergence (multi-step prediction gap between trained and random), our strongest probe-free metric. The unifier evaluation does not yet include this test.
 
-**Architecture-specific mechanism.** The cooperative GRU-adapter mechanism is specific to this architecture. Two-timescale stochastic approximation theory predicts the singular limit at zero backbone learning rate is generic to any coupled system, but whether the specific effects (eRank expansion, Hamming preservation, late-onset advantage) transfer to transformers, SSMs, or other architectures is unknown.
+**Architecture-specific mechanism.** The cooperative GRU-adapter mechanism is specific to this architecture. Two-timescale stochastic approximation theory predicts the discontinuity at zero backbone learning rate is consistent with a degenerate case generic to coupled systems, but whether the specific effects (eRank expansion, Hamming preservation, late-onset advantage) transfer to transformers, SSMs, or other architectures is unknown.
 
-**Transformer generalization for cooperative residual plasticity.** The entire LoRA/adapter ecosystem assumes frozen backbones work fine. Our result suggests a phase transition at exactly zero backbone learning rate. Whether this matters for large transformer fine-tuning on standard benchmarks &mdash; where the pretrained backbone's attractor manifold may already be well-aligned with fine-tuning distributions &mdash; is an open question. The effect may be specific to settings where the frozen component's attractor structure becomes misaligned with new objectives.
+**Transformer generalization for cooperative residual plasticity.** The entire LoRA/adapter ecosystem assumes frozen backbones work fine. Our result is consistent with a discontinuity at exactly zero backbone learning rate. Whether this matters for large transformer fine-tuning on standard benchmarks &mdash; where the pretrained backbone's attractor manifold may already be well-aligned with fine-tuning distributions &mdash; is an open question. The effect may be specific to settings where the frozen component's attractor structure becomes misaligned with new objectives.
 
 **Binary probe R&sup2; is contaminated.** Our binary evaluation depends on exact count accuracy, Hamming RSA, and probe SNR &mdash; metrics developed specifically because standard metrics fail for this world type. These metrics have not been independently validated beyond this project.
 
@@ -526,7 +528,7 @@ The model knows the count is the same regardless of format. The geometric domina
 | Binary dominates combined | GHE 0.33&rarr;4.91&rarr;12.1 progression | Strong |
 | FP unifier encodes both | Dual RSA (0.410/0.265), per-bit 100%, R&sup2;=0.988 | Strong |
 | Count is causally active | 84.2% directional IIA on 8D, null control passes | Moderate (single seed) |
-| Information &ne; geometry | pR&sup2; drops 0.572&rarr;0.008, per-bit stays 100% | Strong (7 conditions) |
+| Accuracy &ne; geometry | pR&sup2; drops 0.572&rarr;0.008, per-bit stays 100% | Strong (7 conditions) |
 | VICReg permanently shapes geometry | RSA 2&times; higher after 400 steps variance pressure | Moderate (single seed) |
 | Late imprinting &gt; early | onset-5000 wins all metrics; replicated directionally | Moderate (2 runs) |
 | GRU accommodation required | eRank expansion (23.9) vs collapse (16.4) | Moderate (single seed) |
@@ -571,6 +573,10 @@ This project was built by **major-scale** and **Claude** (Anthropic) working tog
 - van den Oord, Li &amp; Vinyals (2018) &mdash; *Representation Learning with Contrastive Predictive Coding.* arXiv:1807.03748.
 - Geiger et al. (2021) &mdash; *Causal Abstractions of Neural Networks.* NeurIPS 2021.
 - Belinkov (2022) &mdash; *Probing Classifiers: Promises, Shortcomings, and Advances.* Computational Linguistics.
+- Zhang et al. (2023) &mdash; *SLCA: Slow Learner with Classifier Alignment for Continual Learning with Pre-Trained Models.* ICCV 2023.
+- Fascianelli et al. (2024) &mdash; *Neural Representational Geometries Reflect Behavioral Differences in Monkeys and Recurrent Neural Networks.* Nature Communications.
+- Kriegeskorte (2013) &mdash; *Representational Similarity Analysis &mdash; Connecting the Branches of Systems Neuroscience.* Trends in Cognitive Sciences.
+- Papyan, Han &amp; Donoho (2020) &mdash; *Prevalence of Neural Collapse During the Terminal Phase of Deep Learning Training.*
 
 ---
 
