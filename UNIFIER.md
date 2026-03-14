@@ -416,6 +416,33 @@ VICReg's actual contribution is not decorrelation (which comes for free) but **e
 
 Source: `scripts/subspace_results/null_model_results.json`
 
+### 5. Compositional Structure Survives Unification
+
+Does the binary specialist's clean factored bit structure survive the adapter + GRU integration? We ran the binary successor decomposition on all 7 unifier conditions using the same canonical inputs (h_a, h_b from battery_final.npz), comparing against the raw binary specialist.
+
+| Condition | mag-depth r | Sign agr. | Cross-talk | cos(d0,d0) | cos(d0,d1) | PCA-90 |
+| :-- | :--: | :--: | :--: | :--: | :--: | :--: |
+| Binary specialist (512-d) | +0.975 | 23/23 | 0.001 | 0.627 | &minus;0.507 | 5 |
+| &lambda;=0.1 (base) | +0.012 | 23/23 | 0.010 | 0.174 | &minus;0.225 | 7 |
+| &lambda;=0.005 (sweet spot) | &minus;0.044 | 23/23 | 0.010 | 0.189 | &minus;0.219 | 8 |
+| &lambda;=0.05 | &minus;0.043 | 23/23 | 0.010 | 0.234 | &minus;0.267 | 7 |
+| &lambda;=0.0 (no alignment) | +0.962 | 23/23 | 0.011 | 0.658 | &minus;0.515 | 5 |
+| VICReg (70K) | +0.903 | 23/23 | 0.012 | 0.522 | &minus;0.372 | 6 |
+| Late VICReg (onset 5000) | +0.953 | 23/23 | 0.011 | 0.600 | &minus;0.462 | 6 |
+| Early VICReg (onset 0) | +0.817 | 23/23 | 0.011 | 0.580 | &minus;0.403 | 6 |
+
+Three findings:
+
+**Sign agreement is universally preserved.** Every condition achieves 100% sign agreement (23/23 changed bits match expected direction). The 4 orthogonal bit-flip axes discovered by the specialist survive the adapter + GRU transform intact. This holds regardless of alignment loss, VICReg timing, or contrastive weight.
+
+**Carry-depth structure splits on contrastive pressure.** Without contrastive alignment (&lambda;=0, VICReg variants), magnitude-depth correlation stays high (r=0.82&ndash;0.96), meaning the 7&rarr;8 full cascade is still representationally larger than a simple 0&rarr;1 flip. With contrastive alignment, this correlation drops to essentially zero (r&asymp;0). The InfoNCE loss normalizes all count-to-count distances equally, erasing the carry-depth signature.
+
+**Cosine structure tracks magnitude-depth.** Non-contrastive conditions preserve the specialist's cosine grouping (within-depth-0 similarity ~0.58&ndash;0.66, depth-0 vs depth-1 ~&minus;0.40 to &minus;0.51). Contrastive conditions flatten this structure (within-depth-0 drops to ~0.17&ndash;0.23, between-group similarity weakens). The geometric grouping by carry type survives integration only when contrastive pressure is absent.
+
+This is the accuracy-geometry dissociation at the individual-transition level: the contrastive loss preserves what the step vector *means* (which bits flip) while erasing what it *looks like* (how far the representation moves).
+
+Source: `artifacts/binary_successor/unifier_successor_analysis.json`
+
 ---
 
 ## What the Unifier Learned
@@ -428,7 +455,18 @@ Across every experiment, every alignment condition, every VICReg timing, every a
 
 3. **Task accuracy and geometric organization are independent.** You can reshape the geometry dramatically (ordinal-dominant, Hamming-dominant, balanced) and task accuracy doesn't change. Content and structure are formally separable.
 
-4. **The integration is controllable and stable.** VICReg timing, contrastive weight, and architectural choices provide precise control over the resulting geometry. The unifier isn't a black box &mdash; its representational structure responds predictably to training interventions.
+4. **Factored compositional structure survives integration.** We ran the binary successor decomposition on unifier hidden states (256-dim) across all 7 conditions. Sign agreement &mdash; whether each step vector projects correctly onto the 4 independent bit-flip directions &mdash; is **100% (23/23) in every condition**, matching the specialist. The adapters faithfully relay the factored bit structure through the GRU. Cross-talk increases ~7&times; (0.001&rarr;0.010) but remains negligible in absolute terms.
+
+    But magnitude-depth correlation &mdash; whether the representational displacement from n to n+1 scales with carry depth &mdash; splits cleanly along the contrastive/non-contrastive divide:
+
+    | Group | Conditions | mag-depth r |
+    | :-- | :-- | :--: |
+    | Non-contrastive | &lambda;=0, VICReg, onset-5000, onset-0 | +0.82 to +0.96 |
+    | Contrastive | &lambda;=0.005, &lambda;=0.05, &lambda;=0.1 | &minus;0.04 to +0.01 |
+
+    The contrastive InfoNCE loss treats all count mismatches equally (same-count positive, different-count negative), normalizing representational distances regardless of carry depth. This erases the magnitude-depth structure while perfectly preserving the factored bit directions &mdash; the accuracy-geometry dissociation visible at the level of individual transitions.
+
+5. **The integration is controllable and stable.** VICReg timing, contrastive weight, and architectural choices provide precise control over the resulting geometry. The unifier isn't a black box &mdash; its representational structure responds predictably to training interventions.
 
 ### Integration, not yet abstraction
 
@@ -611,6 +649,8 @@ The model knows the count is the same regardless of format. The geometric domina
 | FP unifier encodes both | Dual RSA (0.410/0.265), per-bit 100%, R&sup2;=0.988 | Strong |
 | Count is causally active | 84.2% directional IIA on 8D, null control passes | Moderate (single seed) |
 | Accuracy &ne; geometry | pR&sup2; drops 0.572&rarr;0.008, per-bit stays 100% | Strong (7 conditions) |
+| Factored structure survives integration | 100% sign agreement across all 7 unifier conditions | Strong (7 conditions) |
+| Contrastive erases carry-depth structure | mag-depth r: +0.96 (non-contrastive) vs &minus;0.04 (contrastive) | Strong (7 conditions) |
 | VICReg permanently shapes geometry | RSA 2&times; higher after 400 steps variance pressure | Moderate (single seed) |
 | Late imprinting &gt; early | onset-5000 wins all metrics; replicated directionally | Moderate (2 runs) |
 | GRU accommodation required | eRank expansion (23.9) vs collapse (16.4) | Moderate (single seed) |
