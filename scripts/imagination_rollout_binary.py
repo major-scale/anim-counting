@@ -341,7 +341,15 @@ def collect_imagination_data(weights, n_episodes=15, max_steps=900,
 # ─── Analysis ─────────────────────────────────────────────────────────────────
 
 def train_bit_probes(all_posterior_h, all_posterior_counts):
-    """Train 4 bit probes on posterior hidden states."""
+    """Train 4 bit probes on posterior hidden states.
+
+    NOTE: These probes are trained on decimal_count-derived bit labels, which
+    only update AFTER the full carry cascade completes. This differs from the
+    carry propagation analysis (binary_carry_propagation.py), which trains
+    probes on actual column states that change step-by-step during cascades.
+    Posterior timing measurements from these probes should NOT be directly
+    compared to carry propagation timing results.
+    """
     h = np.concatenate(all_posterior_h, axis=0)
     c = np.concatenate(all_posterior_counts, axis=0).astype(int)
     bits = np.array([[(ci >> b) & 1 for b in range(4)] for ci in c])
