@@ -160,42 +160,45 @@ One detail connects the successor analysis to the global geometry. Hamming dista
 
 Source: `artifacts/binary_successor/successor_analysis.json`
 
-### Imagination rollout: observation-guided tracking with learned compositional structure
+### Imagination rollout: the model simulates carries without observations
 
 The successor analysis shows the model has clean factored bit structure and anticipates carries. The carry propagation analysis showed sequential tracking of physical cascades &mdash; bit probes trained on *actual column states* detect each bit flip as it happens in the observation, with crossing times spanning ~10 timesteps for full cascades (bit0 at t=&minus;10.4, bit1 at t=&minus;6.4, bit2 at t=&minus;2.5, bit3 at t=&minus;0.5 for 7&rarr;8). But does the model *generate* these cascades internally, or does it track them through observation-driven updates?
 
 We tested this by forking the RSSM into imagination mode (prior only, no observations) 20 timesteps before each carry cascade and measuring whether bit probes show sequential LSB&rarr;MSB cascades in the model's autonomous dynamics.
 
 <p align="center">
-  <img src="figures/imagination_vs_posterior.png" alt="Posterior vs imagination bit-probe trajectories across 4 carry depths" width="100%">
+  <img src="figures/imagination_vs_posterior_colstate.png" alt="Posterior vs imagination bit-probe trajectories across 4 carry depths" width="100%">
 </p>
 
-**Figure 7: Imagination (bottom) vs posterior (top) bit-probe trajectories.** Each column is one carry depth (0&rarr;1, 1&rarr;2, 3&rarr;4, 7&rarr;8). Thin lines are individual episodes; thick lines are means. The imagination gets the right endpoint but with noise, spread, and ordering violations that increase with carry depth.
+**Figure 7: Posterior (top) vs imagination (bottom) carry cascade dynamics.** Each column is one carry depth (0&rarr;1, 1&rarr;2, 3&rarr;4, 7&rarr;8). Thin lines are individual episodes; thick lines are means. Bit activations are normalized to [0,1] using global on/off means from battery data. Probes are trained on actual column states, matching the carry propagation analysis. Colored dashed lines mark mean crossing times.
 
-**Methodological note**: The probes here are trained on `decimal_count`-derived bit labels, which only update *after* the full cascade completes. This differs from the carry propagation analysis, which trained probes on *actual column states* that change step-by-step during cascades. The two probe types measure different things: decimal-count probes detect transitions between completed count states; column-state probes detect physical bit flips as they happen. The posterior timing in the table below (all bits crossing within 1 step) reflects the decimal-count probe calibration and should not be compared directly to the carry propagation's sequential crossing times. The carry propagation result &mdash; sequential tracking over ~10 steps &mdash; stands.
+**The imagination reproduces the sequential cascade.** When the RSSM's prior runs without any observations, it generates the same LSB&rarr;MSB sequential bit-flip cascade observed in the posterior. The timing and ordering match closely across all carry depths:
 
-Three observations from the imagination analysis:
-
-**Imagination predicts endpoints, not processes.** The imagination correctly identifies which bits should flip and in which direction (100% directional agreement at all depths), but the transitions are noisy, spread over ~10 timesteps, and lack consistent sequential ordering. At depth 3 (7&rarr;8), the imagination is classified as non-sequential (bit ordering violated, span = &minus;0.7).
-
-**Carry isolation degrades in imagination.** In the posterior, non-changing bits barely move (max displacement &le; 0.049). In imagination, non-changing bits show significant bleed (max displacement up to 0.163 at depth 1). The model's internal dynamics leak activation across bit dimensions when running without observational correction.
-
-**Noise scales with carry depth.** Depth-0 transitions (single bit flip) are relatively clean in imagination. Depth-3 transitions (all 4 bits) show large variance bands and timing violations. The more bits that must change, the worse the imagination's fidelity.
-
-| Carry depth | Transition | Imagination span | Imag sequential? | Carry bleed (imag) |
+| Carry depth | Transition | Post span | Imag span | Both sequential? |
 | :--: | :--: | :--: | :--: | :--: |
-| 0 | 0&rarr;1 | 0.0 | Yes | 0.096 |
-| 1 | 1&rarr;2 | 0.3 | Yes | 0.163 |
-| 2 | 3&rarr;4 | 0.8 | Yes | 0.123 |
-| 3 | 7&rarr;8 | &minus;0.7 | **No** | 0.000 |
+| 0 | 0&rarr;1 | 0.0 | 0.0 | Yes |
+| 1 | 1&rarr;2 | 2.0 | 2.1 | Yes |
+| 2 | 3&rarr;4 | 6.0 | 6.4 | Yes |
+| 3 | 7&rarr;8 | **10.0** | **10.3** | **Yes** |
 
-Combining the carry propagation analysis (sequential observation-driven tracking) with the imagination rollout (noisy endpoint prediction without observations): the model has all the structural ingredients for binary arithmetic (factored bit axes, carry-depth magnitude scaling, anticipation from current bit state) and uses them with compositional precision when observations guide the process. Without observations, it reaches approximately the right destination but loses the temporal structure of the cascade.
+For the full cascade (7&rarr;8), per-bit crossing times:
 
-This is **observation-guided forward tracking with learned compositional structure** &mdash; not reactive tracking (the model anticipates carries before they happen) and not autonomous simulation (the model can't reproduce the cascade without visual input). The carry propagation's zero bleed is still remarkable: the model never activates non-participating bits even while tracking cascades in real time. But this precision is scope-bounded tracking, not scope-bounded generation.
+| Bit | Posterior | Imagination | Carry prop (battery) |
+| :--: | :--: | :--: | :--: |
+| bit0 (&darr;) | &minus;10.5 | &minus;11.2 | &minus;10.4 |
+| bit1 (&darr;) | &minus;6.5 | &minus;6.9 | &minus;6.4 |
+| bit2 (&darr;) | &minus;2.5 | &minus;3.0 | &minus;2.5 |
+| bit3 (&uarr;) | &minus;0.5 | &minus;0.9 | &minus;0.5 |
 
-This connects to the prediction-without-abstraction finding from Stage 3 (boundary sort): the world model builds representational structure that *encodes* computational operations without *performing* them autonomously. The binary specialist has internalized the structure of addition (four independent bit-flip axes composed to represent any transition) but doesn't execute addition as an internal algorithm. It's a map of arithmetic, not an arithmetic engine.
+Three measurements (carry propagation on battery data, this posterior, this imagination) agree within ~1 step. The imagination generates the cascade at the same pace as the posterior &mdash; approximately 4 timesteps per carry phase, LSB to MSB. Every depth is sequential. Every imagination span matches the corresponding posterior span.
 
-Source: `artifacts/binary_successor/imagination_rollout.json`
+**Methodological note: probe calibration matters.** An initial analysis using probes trained on `decimal_count`-derived labels (which only update after the full cascade completes) classified the result as Outcome C &mdash; partial cascade with ordering violations. This was entirely a measurement artifact. The decimal-count probes were blind to intermediate cascade states, compressing a 10-step sequential process into a 1-step jump. The corrected analysis uses probes trained on actual column states from the battery data, matching the carry propagation analysis exactly.
+
+**This is Outcome A: active simulation.** The RSSM's dynamics model, running without any visual input, generates the sequential carry cascade from internal dynamics alone. The model doesn't just predict what comes next &mdash; it simulates *how* the physical process unfolds, bit by bit, in the correct temporal order.
+
+Combined with the other findings &mdash; four orthogonal bit-flip axes, carry-depth magnitude scaling (r=0.98), carry anticipation (8+ timesteps before onset), and zero carry bleed at depth 3 &mdash; this constitutes a remarkably complete internalization of binary arithmetic. The model has not just learned the *structure* of addition (factored bit axes) or the *knowledge* of what transitions produce (correct endpoints). It has learned the *process*: the sequential carry cascade that is the physical mechanism of binary incrementing.
+
+Source: `artifacts/binary_successor/imagination_rollout_colstate.json`
 
 ### The first key insight
 
@@ -535,7 +538,7 @@ The counting manifold paper's probe R&sup2;=0.993 vs 0.120 untrained is valid be
 
 **No rollout divergence for the unifier.** The counting and classification experiments included rollout divergence (multi-step prediction gap between trained and random), our strongest probe-free metric. The unifier evaluation does not yet include this test.
 
-**Imagination rollout probe calibration differs from carry propagation.** The imagination rollout trains probes on `decimal_count`-derived labels, which stay constant during cascades and only update at completion. The carry propagation analysis trains probes on actual column states, which change step-by-step. The two probe types cannot be directly compared for timing measurements. To properly test whether imagination reproduces sequential cascade dynamics, the imagination rollout would need to use column-state-calibrated probes &mdash; this remains future work.
+**Imagination rollout requires matched probes.** An initial imagination analysis using `decimal_count`-derived probes (which are blind to mid-cascade states) classified the result as Outcome C (partial cascade). The corrected analysis using column-state probes (matching the carry propagation methodology) revealed Outcome A (full sequential cascade). Probe calibration matters for timing measurements &mdash; the corrected result uses probes trained on battery data column states.
 
 **Architecture-specific mechanism.** The cooperative GRU-adapter mechanism is specific to this architecture. Two-timescale stochastic approximation theory predicts the discontinuity at zero backbone learning rate is consistent with a degenerate case generic to coupled systems, but whether the specific effects (eRank expansion, Hamming preservation, late-onset advantage) transfer to transformers, SSMs, or other architectures is unknown.
 
@@ -697,7 +700,7 @@ The model knows the count is the same regardless of format. The geometric domina
 | Contrastive entangles | z=4.9, p=0.0003 at &lambda;=0.05 | Strong (permutation test) |
 | Binary probe R&sup2; is contaminated | Random R&sup2;=0.977 (3 seeds), per-bit &gt;99% | Strong |
 | Cooperative residual plasticity | eRank diverges: unfrozen expands, frozen collapses | Moderate (single seed) |
-| Imagination = endpoint prediction, not autonomous simulation | Non-sequential at depth 3, carry bleed 3&times; higher, noise scales with depth | Moderate (30 episodes, probe calibration caveat) |
+| Imagination reproduces sequential carry cascade | Span 10.3 (imag) vs 10.0 (post) for 7&rarr;8, all 4 depths sequential, per-bit timing within 1 step | Strong (30 episodes, matched probes) |
 
 ---
 
