@@ -1,0 +1,377 @@
+{
+  "henrici": {
+    "0": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.0496959145105407,
+      "henrici_number": 0.25510557668634004
+    },
+    "1": {
+      "upcoming_depth": 1,
+      "spectral_radius": 1.2275472342313867,
+      "henrici_number": 0.3054595688021461
+    },
+    "2": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.1158504242384475,
+      "henrici_number": 0.28159752298084667
+    },
+    "3": {
+      "upcoming_depth": 2,
+      "spectral_radius": 1.1993939645974943,
+      "henrici_number": 0.3042823918326993
+    },
+    "4": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.257237006914387,
+      "henrici_number": 0.30499800641254676
+    },
+    "5": {
+      "upcoming_depth": 1,
+      "spectral_radius": 1.3070715227722016,
+      "henrici_number": 0.3622048432129802
+    },
+    "6": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.2182935998598519,
+      "henrici_number": 0.28668906623535356
+    },
+    "7": {
+      "upcoming_depth": 3,
+      "spectral_radius": 1.2212755732524114,
+      "henrici_number": 0.31087380787059044
+    },
+    "8": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.171924523098437,
+      "henrici_number": 0.2619967644897098
+    },
+    "9": {
+      "upcoming_depth": 1,
+      "spectral_radius": 1.1345155090639258,
+      "henrici_number": 0.2873721436671405
+    },
+    "10": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.1906752580594002,
+      "henrici_number": 0.2691431742518521
+    },
+    "11": {
+      "upcoming_depth": 2,
+      "spectral_radius": 1.1731976254279104,
+      "henrici_number": 0.27108046823633286
+    },
+    "12": {
+      "upcoming_depth": 0,
+      "spectral_radius": 1.19073042574176,
+      "henrici_number": 0.2427376011698247
+    },
+    "13": {
+      "upcoming_depth": 1,
+      "spectral_radius": 1.044668029687178,
+      "henrici_number": 0.217838604867467
+    }
+  },
+  "henrici_correlation": {
+    "r": 0.4593415672761013,
+    "p": 0.09846762463355717
+  },
+  "directional": {
+    "0": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0008986248867586255,
+        "1": 0.00018774090858642012,
+        "2": 0.00042537203989923,
+        "3": 0.001104392809793353
+      },
+      "relevant_variance": 0.0008986248867586255,
+      "irrelevant_variance": 0.0005725019194263344,
+      "ratio": 1.5696451946555514,
+      "n_steps": 368
+    },
+    "1": {
+      "upcoming_depth": 1,
+      "bits_flipping": [
+        0,
+        1
+      ],
+      "bits_not_flipping": [
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0008683967171236873,
+        "1": 0.00019705737940967083,
+        "2": 0.00047085064579732716,
+        "3": 0.0007454328588210046
+      },
+      "relevant_variance": 0.000532727048266679,
+      "irrelevant_variance": 0.0006081417523091659,
+      "ratio": 0.87599156980074,
+      "n_steps": 441
+    },
+    "2": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0008871008176356554,
+        "1": 0.00026726984651759267,
+        "2": 0.0005931780324317515,
+        "3": 0.00046360865235328674
+      },
+      "relevant_variance": 0.0008871008176356554,
+      "irrelevant_variance": 0.000441352177100877,
+      "ratio": 2.00996134982902,
+      "n_steps": 437
+    },
+    "3": {
+      "upcoming_depth": 2,
+      "bits_flipping": [
+        0,
+        1,
+        2
+      ],
+      "bits_not_flipping": [
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.061489298939704895,
+        "1": 0.00019037991296499968,
+        "2": 0.0005288675311021507,
+        "3": 0.000622154213488102
+      },
+      "relevant_variance": 0.020736182127924014,
+      "irrelevant_variance": 0.000622154213488102,
+      "ratio": 33.329649913751766,
+      "n_steps": 590
+    },
+    "4": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0004461289499886334,
+        "1": 0.0002143070742022246,
+        "2": 0.0006462150486186147,
+        "3": 0.00028123296215198934
+      },
+      "relevant_variance": 0.0004461289499886334,
+      "irrelevant_variance": 0.0003805850283242762,
+      "ratio": 1.172218865132316,
+      "n_steps": 524
+    },
+    "5": {
+      "upcoming_depth": 1,
+      "bits_flipping": [
+        0,
+        1
+      ],
+      "bits_not_flipping": [
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.00048456696094945073,
+        "1": 0.0001596239599166438,
+        "2": 0.0002731788554228842,
+        "3": 0.0003388102340977639
+      },
+      "relevant_variance": 0.00032209546043304726,
+      "irrelevant_variance": 0.00030599454476032406,
+      "ratio": 1.052618309536644,
+      "n_steps": 631
+    },
+    "6": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.00044411083217710257,
+        "1": 0.00013742300507146865,
+        "2": 0.00044283343595452607,
+        "3": 0.00028129262500442564
+      },
+      "relevant_variance": 0.00044411083217710257,
+      "irrelevant_variance": 0.0002871830220101401,
+      "ratio": 1.5464383272679034,
+      "n_steps": 607
+    },
+    "7": {
+      "upcoming_depth": 3,
+      "bits_flipping": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "bits_not_flipping": [],
+      "per_bit_variance": {
+        "0": 0.2038213610649109,
+        "1": 0.02854206971824169,
+        "2": 0.000388517277315259,
+        "3": 0.0002787856210488826
+      },
+      "relevant_variance": 0.05825768342037918,
+      "irrelevant_variance": 0.06810885458501853,
+      "ratio": 0.8553613737206168,
+      "n_steps": 847
+    },
+    "8": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0003613306034822017,
+        "1": 0.00011987291509285569,
+        "2": 0.0006175853777676821,
+        "3": 0.0002688318199943751
+      },
+      "relevant_variance": 0.0003613306034822017,
+      "irrelevant_variance": 0.0003354300376183043,
+      "ratio": 1.0772160002360027,
+      "n_steps": 729
+    },
+    "9": {
+      "upcoming_depth": 1,
+      "bits_flipping": [
+        0,
+        1
+      ],
+      "bits_not_flipping": [
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.00022325194731820375,
+        "1": 5.11159778397996e-05,
+        "2": 0.0002901940606534481,
+        "3": 0.0001542966638226062
+      },
+      "relevant_variance": 0.00013718396257900167,
+      "irrelevant_variance": 0.00022224536223802716,
+      "ratio": 0.6172635559075297,
+      "n_steps": 843
+    },
+    "10": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.00027362871333025396,
+        "1": 7.56693261791952e-05,
+        "2": 0.00013895735901314765,
+        "3": 8.655864803586155e-05
+      },
+      "relevant_variance": 0.00027362871333025396,
+      "irrelevant_variance": 0.00010039511107606813,
+      "ratio": 2.7255183085850554,
+      "n_steps": 834
+    },
+    "11": {
+      "upcoming_depth": 2,
+      "bits_flipping": [
+        0,
+        1,
+        2
+      ],
+      "bits_not_flipping": [
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.03555026650428772,
+        "1": 0.00010047056275652722,
+        "2": 0.00019332132069393992,
+        "3": 0.0001308670180151239
+      },
+      "relevant_variance": 0.011948019462579396,
+      "irrelevant_variance": 0.0001308670180151239,
+      "ratio": 91.29893569668256,
+      "n_steps": 986
+    },
+    "12": {
+      "upcoming_depth": 0,
+      "bits_flipping": [
+        0
+      ],
+      "bits_not_flipping": [
+        1,
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.00016185945423785597,
+        "1": 5.960130147286691e-05,
+        "2": 0.00022688007447868586,
+        "3": 0.00011970949708484113
+      },
+      "relevant_variance": 0.00016185945423785597,
+      "irrelevant_variance": 0.00013539695767879797,
+      "ratio": 1.1954438047406866,
+      "n_steps": 929
+    },
+    "13": {
+      "upcoming_depth": 1,
+      "bits_flipping": [
+        0,
+        1
+      ],
+      "bits_not_flipping": [
+        2,
+        3
+      ],
+      "per_bit_variance": {
+        "0": 0.0001356864086119458,
+        "1": 2.92560835077893e-05,
+        "2": 0.00012232016888447106,
+        "3": 7.203389395726845e-05
+      },
+      "relevant_variance": 8.247124605986755e-05,
+      "irrelevant_variance": 9.717703142086975e-05,
+      "ratio": 0.8486701523396816,
+      "n_steps": 1032
+    }
+  },
+  "directional_correlation": {
+    "r": -0.19992068213053113,
+    "p": 0.4931788230282449
+  }
+}

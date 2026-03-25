@@ -1,470 +1,563 @@
 #!/usr/bin/env python3
 """
-Generate publication-quality figures for the counting manifold paper.
-Figures use SciencePlots styling, viridis colormap, and PDF output.
-
-Usage:
-    python generate_figures.py [--data_dir /path/to/h_t_data] [--output_dir /path/to/figures]
+Generate all publication-quality figures for CCN paper.
+Output: bridge/figures/*.png (300 DPI, poster-readable fonts)
 """
 
-import os, sys, argparse, json
+import json
 import numpy as np
-from pathlib import Path
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.colors import LinearSegmentedColormap
+from pathlib import Path
 
-# Try SciencePlots
-try:
-    plt.style.use(['science', 'no-latex'])
-except Exception:
-    print("SciencePlots not available, using default style")
+# Paths
+ART_DIR = Path("/workspace/bridge/artifacts/binary_successor")
+FIG_DIR = Path("/workspace/bridge/figures")
+FIG_DIR.mkdir(parents=True, exist_ok=True)
+BATTERY_PATH = Path("/workspace/projects/jamstack-v1/bridge/artifacts/battery/binary_baseline_s0/battery.npz")
 
-plt.rcParams['pdf.fonttype'] = 42  # TrueType fonts
-plt.rcParams['font.size'] = 8
-plt.rcParams['axes.labelsize'] = 8
-plt.rcParams['xtick.labelsize'] = 7
-plt.rcParams['ytick.labelsize'] = 7
-plt.rcParams['legend.fontsize'] = 7
+# Global style
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.dpi': 300,
+    'savefig.dpi': 300,
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.15,
+})
 
-from sklearn.manifold import Isomap
-from sklearn.decomposition import PCA
-from sklearn.neighbors import kneighbors_graph
-from scipy.sparse.csgraph import shortest_path
-from scipy.spatial.distance import pdist, squareform
-from scipy.stats import spearmanr
-
-# Consistent condition colors (tab10)
-CONDITION_COLORS = {
-    'Line': '#1f77b4',
-    'No-slots+no-count': '#ff7f0e',
-    'Grid (baseline)': '#2ca02c',
-    'Scatter': '#d62728',
-    'Circle': '#9467bd',
-    'No-count': '#8c564b',
-    'Shuffled': '#e377c2',
-}
-
-# Full results table (metric-only, no h_t needed)
-RESULTS = [
-    {'name': 'Line',              'ghe': 0.288, 'r2': 0.998, 'b0': 1, 'b1': 0, 'rsa': 0.982, 'steps': '100K'},
-    {'name': 'No-slots+no-count', 'ghe': 0.303, 'r2': 0.997, 'b0': 1, 'b1': 0, 'rsa': 0.981, 'steps': '200K'},
-    {'name': 'Grid (baseline)',   'ghe': 0.327, 'r2': 0.998, 'b0': 1, 'b1': 0, 'rsa': 0.982, 'steps': '300K'},
-    {'name': 'Scatter',           'ghe': 0.334, 'r2': 0.996, 'b0': 1, 'b1': 0, 'rsa': 0.980, 'steps': '100K'},
-    {'name': 'Circle',            'ghe': 0.394, 'r2': 0.996, 'b0': 1, 'b1': 0, 'rsa': 0.978, 'steps': '100K'},
-    {'name': 'No-count',          'ghe': 0.440, 'r2': 0.998, 'b0': 1, 'b1': 0, 'rsa': 0.981, 'steps': '100K'},
-]
+BIT_COLORS = ['#2196F3', '#FF9800', '#4CAF50', '#F44336']  # blue, orange, green, red
+BIT_LABELS = ['Bit 0 (LSB)', 'Bit 1', 'Bit 2', 'Bit 3 (MSB)']
 
 
-def load_h_t_data(data_dir, label):
-    """Load h_t data from .npz file."""
-    path = Path(data_dir) / f"{label}.npz"
-    if not path.exists():
-        return None
-    data = np.load(path, allow_pickle=True)
-    return {
-        'h_t': data['h_t'],
-        'counts': data['counts'],
-        'episode_ids': data['episode_ids'],
-        'timesteps': data['timesteps'],
-    }
+def load_json(name):
+    with open(ART_DIR / name) as f:
+        return json.load(f)
 
 
-def compute_centroids(h_t, counts):
-    """Compute count-averaged centroids."""
-    max_count = int(counts.max())
-    centroids = []
-    valid_counts = []
-    for c in range(max_count + 1):
-        mask = counts == c
-        if mask.sum() > 0:
-            centroids.append(h_t[mask].mean(axis=0))
-            valid_counts.append(c)
-    return np.stack(centroids), np.array(valid_counts)
+# ============================================================
+# FIGURE 2: Imagination vs Posterior (PRIORITY 1)
+# ============================================================
+def figure2_imagination():
+    """Side-by-side 7->8 cascade: posterior vs imagination."""
+    data = load_json("imagination_rollout_colstate.json")
+    d3 = data["depth_3"]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
+
+    for ax, mode, title, span_val in [
+        (ax1, "post", "Posterior (with observations)", d3["post_span"]),
+        (ax2, "imag", "Imagination (no observations)", d3["imag_span"]),
+    ]:
+        crossings = d3[f"{mode}_crossings"]
+
+        # Plot each bit's crossing times as a distribution
+        for bit_idx in range(4):
+            bit_key = str(bit_idx)
+            if bit_key in crossings:
+                times = np.array(crossings[bit_key])
+                mean_t = times.mean()
+                std_t = times.std()
+
+                # Horizontal bar showing mean +/- std
+                ax.barh(bit_idx, std_t * 2, left=mean_t - std_t,
+                        height=0.6, color=BIT_COLORS[bit_idx], alpha=0.3,
+                        edgecolor=BIT_COLORS[bit_idx], linewidth=1.5)
+                # Mean marker
+                ax.plot(mean_t, bit_idx, 'o', color=BIT_COLORS[bit_idx],
+                        markersize=8, zorder=5)
+                # Individual points
+                ax.plot(times, np.full_like(times, bit_idx), '|',
+                        color=BIT_COLORS[bit_idx], markersize=6, alpha=0.3)
+
+        ax.set_title(title, fontweight='bold')
+        ax.set_xlabel("Steps relative to cascade completion")
+        ax.set_yticks(range(4))
+        ax.set_yticklabels(BIT_LABELS)
+        ax.axvline(0, color='gray', linestyle='--', alpha=0.5, linewidth=1)
+        ax.set_xlim(-14, 2)
+
+        # Annotate span
+        ax.text(0.97, 0.03, f"Span: {span_val:.1f} steps",
+                transform=ax.transAxes, ha='right', va='bottom',
+                fontsize=12, style='italic',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.8))
+
+    # Gray background for imagination panel
+    ax2.set_facecolor('#f5f5f5')
+
+    # Arrow showing LSB->MSB direction
+    ax1.annotate('LSB then MSB\nsequence', xy=(-10, 0.3), xytext=(-6, 3.5),
+                fontsize=10, ha='center',
+                arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
+
+    fig.suptitle("7 to 8 Carry Cascade: Physical Process vs Mental Simulation",
+                 fontsize=16, fontweight='bold', y=1.02)
+    plt.tight_layout()
+    fig.savefig(FIG_DIR / "fig2_imagination_vs_posterior.png")
+    plt.close()
+    print("  Saved fig2_imagination_vs_posterior.png")
 
 
-def compute_geodesic_distances(centroids, k=6):
-    """Compute geodesic distance matrix."""
-    n = len(centroids)
-    A = kneighbors_graph(centroids, n_neighbors=min(k, n-1), mode='distance')
-    A = 0.5 * (A + A.T)
-    geo = shortest_path(A, directed=False)
-    return geo
+# ============================================================
+# FIGURE 4: ESN Control (PRIORITY 2)
+# ============================================================
+def figure4_esn():
+    """Grouped bar chart: RSSM vs ESN."""
+    esn = load_json("esn_control.json")
+    agg = esn["aggregate"]
+
+    metrics = ['Probe\nAccuracy', 'RSA\nOrdinal', 'RSA\nHamming', 'Imagination\n(from count 7)']
+    rssm_vals = [1.000, 0.713, 0.811, 1.000]  # RSSM values
+    esn_vals = [
+        agg["count_accuracy"]["mean"],
+        agg["rsa_ordinal"]["mean"],
+        agg["rsa_hamming"]["mean"],
+        0.0,  # ESN imagination fails completely
+    ]
+    esn_errs = [
+        agg["count_accuracy"]["std"],
+        agg["rsa_ordinal"]["std"],
+        agg["rsa_hamming"]["std"],
+        0.0,
+    ]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    x = np.arange(len(metrics))
+    width = 0.35
+
+    bars1 = ax.bar(x - width/2, rssm_vals, width, label='Trained RSSM',
+                   color='#2196F3', edgecolor='white', linewidth=1)
+    bars2 = ax.bar(x + width/2, esn_vals, width, yerr=esn_errs,
+                   label='Echo State Network', color='#9E9E9E',
+                   edgecolor='white', linewidth=1, capsize=4)
+
+    ax.set_ylabel('Score')
+    ax.set_title('Trained RSSM vs Random Reservoir (ESN)', fontweight='bold', fontsize=16)
+    ax.set_xticks(x)
+    ax.set_xticklabels(metrics)
+    ax.legend(loc='upper right', framealpha=0.9)
+    ax.set_ylim(0, 1.15)
+    ax.axhline(1.0, color='gray', linestyle=':', alpha=0.3)
+
+    # Value labels on bars
+    for bar, val in zip(bars1, rssm_vals):
+        ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.02,
+                f'{val:.3f}', ha='center', va='bottom', fontsize=10, fontweight='bold')
+    for bar, val in zip(bars2, esn_vals):
+        ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.02,
+                f'{val:.3f}', ha='center', va='bottom', fontsize=10)
+
+    # Highlight imagination failure
+    ax.annotate('Complete\nfailure', xy=(3 + width/2, 0.05),
+                fontsize=11, ha='center', color='#D32F2F', fontweight='bold')
+
+    plt.tight_layout()
+    fig.savefig(FIG_DIR / "fig4_esn_control.png")
+    plt.close()
+    print("  Saved fig4_esn_control.png")
 
 
-def compute_arc_length(centroids, geo):
-    """Compute cumulative arc-length along the manifold."""
-    n = len(centroids)
-    consec = [geo[i, i+1] for i in range(n-1)]
-    arc = np.cumsum([0] + consec)
-    return arc, consec
+# ============================================================
+# FIGURE 1: Bit-Axis Heatmap (PRIORITY 3)
+# ============================================================
+def figure1_heatmap():
+    """4-row heatmap of bit activations across an episode."""
+    battery = np.load(BATTERY_PATH, allow_pickle=True)
+    bits = battery['bits']  # (13280, 4)
+    counts = battery['counts']  # (13280,)
+
+    # Use first episode (~885 steps)
+    ep_size = len(bits) // 15
+    ep_bits = bits[:ep_size]
+    ep_counts = counts[:ep_size]
+
+    # Find transition points
+    transitions = np.where(np.diff(ep_counts) != 0)[0]
+
+    # Build heatmap: 4 rows (bit 3 top, bit 0 bottom), columns = timesteps
+    heatmap_data = ep_bits.T[::-1]  # Reverse so MSB is on top
+
+    # Custom colormap: red (0) to green (1)
+    cmap = LinearSegmentedColormap.from_list('bit', ['#EF5350', '#FFEE58', '#66BB6A'], N=256)
+
+    fig, ax = plt.subplots(figsize=(16, 3))
+    im = ax.imshow(heatmap_data.astype(float), aspect='auto', cmap=cmap,
+                   interpolation='nearest', vmin=0, vmax=1)
+
+    # Transition lines
+    for t in transitions:
+        ax.axvline(t, color='white', linewidth=0.3, alpha=0.5)
+
+    # Count labels (place at midpoint between transitions)
+    all_boundaries = np.concatenate([[0], transitions, [len(ep_counts)-1]])
+    for i in range(len(all_boundaries) - 1):
+        mid = (all_boundaries[i] + all_boundaries[i+1]) / 2
+        count_val = ep_counts[int(all_boundaries[i]) + 1] if i > 0 else ep_counts[0]
+        if all_boundaries[i+1] - all_boundaries[i] > 15:  # Only label if enough space
+            ax.text(mid, -0.7, str(int(count_val)), ha='center', va='top',
+                    fontsize=7, color='black')
+
+    ax.set_yticks([0, 1, 2, 3])
+    ax.set_yticklabels(['Bit 3 (MSB)', 'Bit 2', 'Bit 1', 'Bit 0 (LSB)'])
+    ax.set_xlabel('Timestep')
+    ax.set_title('Binary Counter in Neural Dynamics: One Full Episode', fontweight='bold')
+
+    # Colorbar
+    cbar = plt.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_ticks([0, 1])
+    cbar.set_ticklabels(['OFF', 'ON'])
+
+    plt.tight_layout()
+    fig.savefig(FIG_DIR / "fig1_bit_heatmap.png")
+    plt.close()
+    print("  Saved fig1_bit_heatmap.png")
 
 
-def menger_curvature(p1, p2, p3):
-    """Compute Menger curvature from three points in R^n."""
-    a = np.linalg.norm(p2 - p1)
-    b = np.linalg.norm(p3 - p2)
-    c = np.linalg.norm(p3 - p1)
-    if a < 1e-10 or b < 1e-10 or c < 1e-10:
-        return 0.0
-    cos_angle = np.clip(np.dot(p2 - p1, p3 - p1) / (np.linalg.norm(p2 - p1) * np.linalg.norm(p3 - p1)), -1, 1)
-    sin_angle = np.sqrt(1 - cos_angle**2)
-    area = 0.5 * np.linalg.norm(p2 - p1) * np.linalg.norm(p3 - p1) * sin_angle
-    return 2 * area / (a * b * c)
+# ============================================================
+# FIGURE 3: Observation Cliff
+# ============================================================
+def figure3_cliff():
+    """The dramatic cliff from continuous to interrupted observation."""
+    stress = load_json("imagination_stress_test.json")
+    cliff = load_json("observation_cliff.json")
+
+    # Extract periodic peek data
+    peeks = stress["exp3_periodic_peeks"]
+    conditions = ['0', '10', '25', '50', '100']
+    labels = ['Continuous', 'Every 10', 'Every 25', 'Every 50', 'Every 100']
+    accs = [peeks[c]["mean_step_accuracy"] for c in conditions]
+    stds = [peeks[c]["std_step_accuracy"] for c in conditions]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    # Panel 1: The cliff
+    colors = ['#4CAF50'] + ['#F44336'] * 4
+    bars = ax1.bar(range(len(labels)), accs, yerr=stds, capsize=4,
+                   color=colors, edgecolor='white', linewidth=1.5)
+    ax1.set_xticks(range(len(labels)))
+    ax1.set_xticklabels(labels, rotation=25, ha='right')
+    ax1.set_ylabel('Step Accuracy')
+    ax1.set_title('Observation Cliff', fontweight='bold')
+    ax1.set_ylim(0, 1.05)
+
+    # Annotate the cliff
+    ax1.annotate('', xy=(1, accs[1] + 0.05), xytext=(0, accs[0] - 0.05),
+                arrowprops=dict(arrowstyle='->', color='red', lw=2))
+    ax1.text(0.5, 0.6, f'{accs[0]:.1%} -> {accs[1]:.1%}',
+            ha='center', fontsize=12, color='red', fontweight='bold')
+
+    # Value labels
+    for i, (bar, val) in enumerate(zip(bars, accs)):
+        ax1.text(bar.get_x() + bar.get_width()/2., bar.get_height() + stds[i] + 0.02,
+                f'{val:.1%}', ha='center', va='bottom', fontsize=10)
+
+    # Panel 2: Multi-peek recovery plateau
+    mp = cliff["multi_peek"]
+    peek_counts = sorted(mp.keys(), key=int)
+    peek_dists = [mp[k]["dist_correct"] for k in peek_counts]
+
+    ax2.plot([int(k) for k in peek_counts], peek_dists, 'o-',
+             color='#F44336', linewidth=2, markersize=8)
+    ax2.axhline(6.77, color='gray', linestyle='--', alpha=0.5, label='Mean inter-centroid dist')
+    ax2.axhline(6.45, color='red', linestyle=':', alpha=0.7, label='Plateau (~6.4)')
+    ax2.set_xlabel('Number of consecutive peeks')
+    ax2.set_ylabel('Distance to correct centroid')
+    ax2.set_title('Multi-Peek Recovery: Permanent Off-Manifold', fontweight='bold')
+    ax2.legend(fontsize=10)
+
+    plt.tight_layout()
+    fig.savefig(FIG_DIR / "fig3_observation_cliff.png")
+    plt.close()
+    print("  Saved fig3_observation_cliff.png")
 
 
-# =====================================================================
-# Figure 1: Hero Figure
-# =====================================================================
-def fig1_hero(data_dir, output_dir):
-    """Three-panel hero figure: Setup → Manifold → Arc-length."""
-    data = load_h_t_data(data_dir, 'grid_baseline_seed0')
-    if data is None:
-        print("  SKIP fig1: no grid_baseline_seed0 data")
-        return
+# ============================================================
+# FIGURE 5: Candidate Explanation Scorecard
+# ============================================================
+def figure5_scorecard():
+    """Visual scorecard of 13 claims tested."""
+    claims = [
+        ("RSSM simulates carry cascades", "Column-state probes, prior-only rollout", True),
+        ("Learned dynamics required", "ESN control (random dynamics, trained readout)", True),
+        ("Bit axes encode disjointly", "MI analysis (512-d x 4-bit)", True),
+        ("Variance scales with depth", "Idle variance vs carry depth", True),
+        ("Count 14 is terminal attractor", "Jacobian eigenvalue analysis", True),
+        ("Off-manifold drift causes cliff", "Drift + multi-peek + gate analysis", True),
+        ("AR1 tracks cascade depth", "AR1 vs carry depth correlation", False),
+        ("Spectral radius predicts depth", "Jacobian at all 15 centroids", False),
+        ("GRU gates close when blind", "Gate comparison across 3 conditions", False),
+        ("Multi-peek recovers state", "Sequential peek recovery (1-20)", False),
+        ("Non-normal amplification", "Henrici departure from normality", False),
+        ("Variance aligns with all bits", "Per-bit directional projection", False),
+        ("Variance-depth = timing artifact", "Partial correlation (idle duration)", False),
+    ]
 
-    h_t, counts = data['h_t'], data['counts']
-    centroids, valid_counts = compute_centroids(h_t, counts)
-    n = len(valid_counts)
-
-    fig, axes = plt.subplots(1, 3, figsize=(7, 2.2), gridspec_kw={'width_ratios': [1.0, 1.2, 1.0]})
-
-    # Panel A: Environment schematic
-    ax = axes[0]
-    ax.set_xlim(0, 14)
-    ax.set_ylim(0, 10)
-    ax.set_aspect('equal')
-    # Field zone (left)
-    np.random.seed(42)
-    for _ in range(12):
-        bx = np.random.uniform(1, 6)
-        by = np.random.uniform(1.5, 8.5)
-        ax.plot(bx, by, 'o', color='#4CAF50', markersize=4, alpha=0.7)
-    # Target grid (right)
-    for row in range(3):
-        for col in range(3):
-            gx = 9.5 + col * 1.2
-            gy = 3 + row * 1.5
-            ax.plot(gx, gy, 's', color='#2196F3', markersize=5, markeredgecolor='#1565C0', markeredgewidth=0.5)
-    # Bot
-    ax.plot(5.5, 5, '^', color='#FF9800', markersize=8, markeredgecolor='#E65100', markeredgewidth=0.5)
-    # Arrow
-    ax.annotate('', xy=(8.5, 5), xytext=(6.5, 5),
-                arrowprops=dict(arrowstyle='->', color='#666', lw=1.5))
-    ax.text(7, 0.5, 'gather', ha='center', fontsize=7, color='#666', style='italic')
-    ax.set_title('(a) Environment', fontsize=8, fontweight='bold')
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(-0.5, len(claims) - 0.5)
+    ax.invert_yaxis()
     ax.axis('off')
 
-    # Panel B: Isomap manifold projection
-    ax = axes[1]
-    iso = Isomap(n_neighbors=min(12, n-1), n_components=2)
-    embedding = iso.fit_transform(centroids)
-    sc = ax.scatter(embedding[:, 0], embedding[:, 1], c=valid_counts,
-                    cmap='viridis', s=25, edgecolors='k', linewidths=0.3, zorder=2)
-    # Connect consecutive points
-    for i in range(n - 1):
-        ax.plot([embedding[i, 0], embedding[i+1, 0]],
-                [embedding[i, 1], embedding[i+1, 1]],
-                'k-', alpha=0.2, linewidth=0.5, zorder=1)
-    cbar = plt.colorbar(sc, ax=ax, shrink=0.8, pad=0.02)
-    cbar.set_label('Count', fontsize=7)
-    ax.set_xlabel('Isomap dim 1', fontsize=7)
-    ax.set_ylabel('Isomap dim 2', fontsize=7)
-    ax.set_title('(b) Learned manifold', fontsize=8, fontweight='bold')
+    # Header
+    ax.text(0.05, -0.8, 'Claim', fontweight='bold', fontsize=13, va='center')
+    ax.text(5.5, -0.8, 'Method', fontweight='bold', fontsize=13, va='center')
+    ax.text(9.5, -0.8, '', fontweight='bold', fontsize=13, va='center', ha='center')
 
-    # Panel C: Arc-length vs count
-    ax = axes[2]
-    geo = compute_geodesic_distances(centroids)
-    arc, _ = compute_arc_length(centroids, geo)
-    ax.scatter(valid_counts, arc, c=valid_counts, cmap='viridis', s=20,
-               edgecolors='k', linewidths=0.3, zorder=2)
-    # Linear fit
-    coeffs = np.polyfit(valid_counts, arc, 1)
-    fit_line = np.polyval(coeffs, valid_counts)
-    ss_res = np.sum((arc - fit_line)**2)
-    ss_tot = np.sum((arc - np.mean(arc))**2)
-    r2 = 1 - ss_res / ss_tot
-    ax.plot(valid_counts, fit_line, 'k--', linewidth=1, alpha=0.7, label=f'$R^2$ = {r2:.3f}')
-    ax.set_xlabel('Count', fontsize=7)
-    ax.set_ylabel('Geodesic arc-length', fontsize=7)
-    ax.set_title('(c) Linearity', fontsize=8, fontweight='bold')
-    ax.legend(fontsize=7, loc='upper left', framealpha=0.8)
+    for i, (claim, method, confirmed) in enumerate(claims):
+        # Alternating background
+        if i % 2 == 0:
+            ax.add_patch(plt.Rectangle((0, i - 0.4), 10, 0.8,
+                        facecolor='#f5f5f5', edgecolor='none'))
 
-    plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'fig1_hero.{fmt}', dpi=300, bbox_inches='tight')
-    plt.close()
-    print("  Generated fig1_hero")
+        # Separator between confirmed and killed
+        if i == 6:
+            ax.axhline(i - 0.45, color='gray', linewidth=1.5, linestyle='-')
 
+        # Claim text
+        ax.text(0.05, i, claim, fontsize=11, va='center',
+                color='#1B5E20' if confirmed else '#B71C1C')
 
-# =====================================================================
-# Figure 3: Ablation Cascade (bar chart + available manifold panels)
-# =====================================================================
-def fig3_ablation_cascade(data_dir, output_dir):
-    """Ablation cascade: bar chart of GHE across conditions."""
+        # Method text
+        ax.text(5.5, i, method, fontsize=9.5, va='center', color='#555')
 
-    # Row 1: Ablation ladder
-    ablation_row = [
-        {'name': 'Grid\n(baseline)', 'ghe': 0.327, 'color': CONDITION_COLORS['Grid (baseline)']},
-        {'name': 'No-count', 'ghe': 0.440, 'color': CONDITION_COLORS['No-count']},
-        {'name': 'No-slots\nno-count', 'ghe': 0.303, 'color': CONDITION_COLORS['No-slots+no-count']},
-    ]
-    # Row 2: Arrangement comparison
-    arrangement_row = [
-        {'name': 'Line', 'ghe': 0.288, 'color': CONDITION_COLORS['Line']},
-        {'name': 'Grid', 'ghe': 0.327, 'color': CONDITION_COLORS['Grid (baseline)']},
-        {'name': 'Scatter', 'ghe': 0.334, 'color': CONDITION_COLORS['Scatter']},
-        {'name': 'Circle', 'ghe': 0.394, 'color': CONDITION_COLORS['Circle']},
-    ]
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.5, 2.5), gridspec_kw={'width_ratios': [3, 4]})
-
-    # Ablation ladder bar chart
-    names = [r['name'] for r in ablation_row]
-    ghes = [r['ghe'] for r in ablation_row]
-    colors = [r['color'] for r in ablation_row]
-    bars = ax1.bar(range(len(names)), ghes, color=colors, edgecolor='k', linewidth=0.5, width=0.6)
-    ax1.set_xticks(range(len(names)))
-    ax1.set_xticklabels(names, fontsize=6)
-    ax1.set_ylabel('GHE', fontsize=8)
-    ax1.set_title('Ablation ladder', fontsize=8, fontweight='bold')
-    ax1.axhline(y=0.5, color='red', linestyle='--', linewidth=0.8, alpha=0.5, label='threshold')
-    ax1.set_ylim(0, 0.6)
-    # Annotate values
-    for bar, ghe in zip(bars, ghes):
-        ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                f'{ghe:.3f}', ha='center', va='bottom', fontsize=6, fontweight='bold')
-    # Star the surprising result
-    ax1.annotate('*', xy=(2, 0.303), fontsize=14, color='red', ha='center',
-                fontweight='bold', xytext=(2, 0.34),
-                arrowprops=dict(arrowstyle='->', color='red', lw=1))
-
-    # Arrangement comparison bar chart
-    names = [r['name'] for r in arrangement_row]
-    ghes = [r['ghe'] for r in arrangement_row]
-    colors = [r['color'] for r in arrangement_row]
-    bars = ax2.bar(range(len(names)), ghes, color=colors, edgecolor='k', linewidth=0.5, width=0.6)
-    ax2.set_xticks(range(len(names)))
-    ax2.set_xticklabels(names, fontsize=7)
-    ax2.set_ylabel('GHE', fontsize=8)
-    ax2.set_title('Arrangement comparison', fontsize=8, fontweight='bold')
-    ax2.axhline(y=0.5, color='red', linestyle='--', linewidth=0.8, alpha=0.5)
-    ax2.set_ylim(0, 0.6)
-    for bar, ghe in zip(bars, ghes):
-        ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                f'{ghe:.3f}', ha='center', va='bottom', fontsize=6, fontweight='bold')
-
-    plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'fig3_ablation_cascade.{fmt}', dpi=300, bbox_inches='tight')
-    plt.close()
-    print("  Generated fig3_ablation_cascade")
-
-
-# =====================================================================
-# Figure 4: Curvature Profile
-# =====================================================================
-def fig4_curvature(data_dir, output_dir):
-    """Menger curvature profile along the manifold."""
-    data = load_h_t_data(data_dir, 'grid_baseline_seed0')
-    if data is None:
-        print("  SKIP fig4: no grid_baseline_seed0 data")
-        return
-
-    h_t, counts = data['h_t'], data['counts']
-    centroids, valid_counts = compute_centroids(h_t, counts)
-    n = len(valid_counts)
-
-    # Compute Menger curvature
-    kappas = []
-    kappa_counts = []
-    for i in range(1, n - 1):
-        k = menger_curvature(centroids[i-1], centroids[i], centroids[i+1])
-        kappas.append(k)
-        kappa_counts.append(valid_counts[i])
-
-    fig, ax = plt.subplots(1, 1, figsize=(3.5, 2.5))
-    ax.plot(kappa_counts, kappas, 'o-', color=CONDITION_COLORS['Grid (baseline)'],
-            markersize=3, linewidth=1, markeredgecolor='k', markeredgewidth=0.3)
-    ax.set_xlabel('Count', fontsize=8)
-    ax.set_ylabel('Menger curvature $\\kappa$', fontsize=8)
-    ax.set_title('Curvature profile (grid baseline)', fontsize=8, fontweight='bold')
-    ax.axhline(y=np.mean(kappas), color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
-    ax.text(1, np.mean(kappas) * 1.05, f'mean={np.mean(kappas):.3f}', fontsize=6, color='gray')
-
-    plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'fig4_curvature.{fmt}', dpi=300, bbox_inches='tight')
-    plt.close()
-    print("  Generated fig4_curvature")
-
-
-# =====================================================================
-# Figure 5: Topology — Persistence Barcodes
-# =====================================================================
-def fig5_topology(data_dir, output_dir):
-    """Persistent homology barcodes."""
-    data = load_h_t_data(data_dir, 'grid_baseline_seed0')
-    if data is None:
-        print("  SKIP fig5: no grid_baseline_seed0 data")
-        return
-
-    try:
-        from ripser import ripser
-    except ImportError:
-        print("  SKIP fig5: ripser not installed")
-        return
-
-    h_t, counts = data['h_t'], data['counts']
-    centroids, valid_counts = compute_centroids(h_t, counts)
-
-    result = ripser(centroids, maxdim=1)
-    h0 = result['dgms'][0]
-    h1 = result['dgms'][1]
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.5, 2.5))
-
-    # H0 barcode
-    h0_sorted = sorted(h0, key=lambda x: x[1] - x[0], reverse=True)
-    for i, (birth, death) in enumerate(h0_sorted):
-        if death == np.inf:
-            death = max(h0[h0[:, 1] != np.inf][:, 1].max() * 1.3 if len(h0[h0[:, 1] != np.inf]) > 0 else 10, 1)
-            ax1.barh(i, death - birth, left=birth, height=0.6, color='#2196F3', edgecolor='k', linewidth=0.3)
-            ax1.plot(death, i, '>', color='#2196F3', markersize=4)
+        # Icon
+        if confirmed:
+            ax.text(9.5, i, 'CONFIRMED', fontsize=10, va='center', ha='center',
+                    color='#4CAF50', fontweight='bold')
         else:
-            ax1.barh(i, death - birth, left=birth, height=0.6, color='#2196F3', edgecolor='k', linewidth=0.3)
-    ax1.set_xlabel('Filtration value', fontsize=7)
-    ax1.set_ylabel('Feature', fontsize=7)
-    ax1.set_title(f'$H_0$ (components): $\\beta_0=1$', fontsize=8, fontweight='bold')
-    ax1.invert_yaxis()
+            ax.text(9.5, i, 'KILLED', fontsize=10, va='center', ha='center',
+                    color='#F44336', fontweight='bold')
 
-    # H1 barcode
-    if len(h1) > 0:
-        h1_sorted = sorted(h1, key=lambda x: x[1] - x[0], reverse=True)
-        for i, (birth, death) in enumerate(h1_sorted):
-            if death == np.inf:
-                death = max(h1[h1[:, 1] != np.inf][:, 1].max() * 1.3 if len(h1[h1[:, 1] != np.inf]) > 0 else 10, 1)
-            ax2.barh(i, death - birth, left=birth, height=0.6, color='#F44336', edgecolor='k', linewidth=0.3)
-        ax2.invert_yaxis()
-    else:
-        ax2.text(0.5, 0.5, 'No persistent features\n(no loops)', transform=ax2.transAxes,
-                ha='center', va='center', fontsize=8, color='gray')
-    ax2.set_xlabel('Filtration value', fontsize=7)
-    ax2.set_ylabel('Feature', fontsize=7)
-    ax2.set_title(f'$H_1$ (loops): $\\beta_1=0$', fontsize=8, fontweight='bold')
+    ax.set_title('Systematic Evaluation: 6 Confirmed, 7 Eliminated',
+                 fontweight='bold', fontsize=15, pad=20)
 
     plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'fig5_topology.{fmt}', dpi=300, bbox_inches='tight')
+    fig.savefig(FIG_DIR / "fig5_scorecard.png")
     plt.close()
-    print("  Generated fig5_topology")
+    print("  Saved fig5_scorecard.png")
 
 
-# =====================================================================
-# Supplementary: Arc-length R² for all conditions (metric-only version)
-# =====================================================================
-def supp3_arclength_summary(data_dir, output_dir):
-    """Summary bar chart of arc-length R² across all conditions."""
-    fig, ax = plt.subplots(1, 1, figsize=(5, 2.5))
+# ============================================================
+# FIGURE 6: PCA Trajectory
+# ============================================================
+def figure6_pca():
+    """2D PCA trajectory through count states."""
+    data = load_json("full_pipeline_trace.json")
+    centroids = data["pca"]["centroids"]
 
-    names = [r['name'] for r in RESULTS]
-    r2s = [r['r2'] for r in RESULTS]
-    colors = [CONDITION_COLORS.get(r['name'], '#999') for r in RESULTS]
+    fig, ax = plt.subplots(figsize=(8, 7))
 
-    bars = ax.bar(range(len(names)), r2s, color=colors, edgecolor='k', linewidth=0.5, width=0.6)
-    ax.set_xticks(range(len(names)))
-    ax.set_xticklabels(names, fontsize=6, rotation=15, ha='right')
-    ax.set_ylabel('Arc-length $R^2$', fontsize=8)
-    ax.set_title('Geodesic linearity across conditions', fontsize=8, fontweight='bold')
-    ax.set_ylim(0.99, 1.001)
-    for bar, r2 in zip(bars, r2s):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.0002,
-                f'{r2:.3f}', ha='center', va='bottom', fontsize=5.5, fontweight='bold')
+    # Plot centroids
+    xs = [centroids[str(c)][0] for c in range(15)]
+    ys = [centroids[str(c)][1] for c in range(15)]
+
+    # Color by count
+    colors_map = plt.cm.viridis(np.linspace(0, 1, 15))
+
+    # Draw trajectory arrows
+    for i in range(14):
+        dx = xs[i+1] - xs[i]
+        dy = ys[i+1] - ys[i]
+        ax.annotate('', xy=(xs[i+1], ys[i+1]), xytext=(xs[i], ys[i]),
+                    arrowprops=dict(arrowstyle='->', color='gray', lw=1, alpha=0.5))
+
+    # Plot points
+    for c in range(15):
+        marker = '*' if c == 14 else 'o'
+        size = 200 if c == 14 else 120
+        edgecolor = 'red' if c == 14 else 'black'
+        lw = 2 if c == 14 else 0.5
+        ax.scatter(xs[c], ys[c], c=[colors_map[c]], s=size, marker=marker,
+                  edgecolors=edgecolor, linewidth=lw, zorder=5)
+        # Label
+        ax.annotate(str(c), (xs[c], ys[c]), textcoords="offset points",
+                   xytext=(8, 8), fontsize=10, fontweight='bold')
+
+    # Highlight 7->8 (longest path, all bits flip)
+    ax.annotate('', xy=(xs[8], ys[8]), xytext=(xs[7], ys[7]),
+                arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
+    mid_x = (xs[7] + xs[8]) / 2
+    mid_y = (ys[7] + ys[8]) / 2
+    ax.text(mid_x + 0.3, mid_y + 0.3, '7->8\n(full cascade)',
+            fontsize=10, color='red', fontweight='bold')
+
+    ax.set_xlabel('PC1 (18.0%)')
+    ax.set_ylabel('PC2 (13.0%)')
+    ax.set_title('Hidden State Trajectory Through Count Space (PCA)',
+                 fontweight='bold')
+
+    # Legend for count 14
+    ax.plot([], [], '*', color='gray', markersize=15, markeredgecolor='red',
+            markeredgewidth=2, label='Count 14 (terminal attractor)')
+    ax.legend(loc='lower left', fontsize=11)
 
     plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'supp3_arclength_summary.{fmt}', dpi=300, bbox_inches='tight')
+    fig.savefig(FIG_DIR / "fig6_pca_trajectory.png")
     plt.close()
-    print("  Generated supp3_arclength_summary")
+    print("  Saved fig6_pca_trajectory.png")
 
 
-# =====================================================================
-# RSA heatmap (from baseline h_t data)
-# =====================================================================
-def fig6_rsm(data_dir, output_dir):
-    """Representational Similarity Matrix for baseline."""
-    data = load_h_t_data(data_dir, 'grid_baseline_seed0')
-    if data is None:
-        print("  SKIP fig6: no grid_baseline_seed0 data")
-        return
+# ============================================================
+# FIGURE 7: Anticipatory Destabilization
+# ============================================================
+def figure7_destabilization():
+    """Variance vs carry depth across 15 counts."""
+    csd = load_json("critical_slowing_down.json")
 
-    h_t, counts = data['h_t'], data['counts']
-    centroids, valid_counts = compute_centroids(h_t, counts)
+    counts_list = list(range(15))
+    variances = [csd["per_count"][str(c)]["mean_variance"] for c in counts_list]
 
-    rdm = squareform(pdist(centroids, metric='euclidean'))
+    def carry_depth(c):
+        if c >= 14: return -1
+        xor = c ^ (c + 1)
+        d = 0
+        while xor > 0:
+            d += 1
+            xor >>= 1
+        return d - 1
 
-    fig, ax = plt.subplots(1, 1, figsize=(3.5, 3.2))
-    im = ax.imshow(rdm, cmap='viridis', origin='lower', aspect='equal')
-    cbar = plt.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
-    cbar.set_label('Euclidean distance', fontsize=7)
-    ax.set_xlabel('Count', fontsize=8)
-    ax.set_ylabel('Count', fontsize=8)
-    ax.set_title('Representational Dissimilarity Matrix', fontsize=8, fontweight='bold')
-    # Set ticks at intervals
-    tick_positions = [0, 5, 10, 15, 20, 25]
-    tick_labels = [str(valid_counts[i]) if i < len(valid_counts) else '' for i in tick_positions]
-    ax.set_xticks(tick_positions)
-    ax.set_xticklabels(tick_labels, fontsize=6)
-    ax.set_yticks(tick_positions)
-    ax.set_yticklabels(tick_labels, fontsize=6)
+    depths = [carry_depth(c) for c in counts_list]
+    depth_colors = {-1: '#9E9E9E', 0: '#2196F3', 1: '#FF9800', 2: '#4CAF50', 3: '#F44336'}
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    for c in counts_list:
+        color = depth_colors[depths[c]]
+        marker = 's' if c == 14 else 'o'
+        size = 120 if c == 14 else 80
+        ax.scatter(c, variances[c], c=color, s=size, marker=marker,
+                  edgecolors='black', linewidth=0.5, zorder=5)
+        ax.text(c, variances[c] + 0.003, str(c), ha='center', va='bottom', fontsize=9)
+
+    ax.set_xlabel('Count state')
+    ax.set_ylabel('Idle-period variance')
+    ax.set_title('Anticipatory Destabilization: Variance Scales with Carry Depth',
+                 fontweight='bold')
+
+    # Legend
+    for d, label in [(-1, 'Terminal (14)'), (0, 'Depth 0'), (1, 'Depth 1'),
+                     (2, 'Depth 2'), (3, 'Depth 3')]:
+        marker = 's' if d == -1 else 'o'
+        ax.scatter([], [], c=depth_colors[d], s=80, marker=marker,
+                  label=label, edgecolors='black', linewidth=0.5)
+    ax.legend(title='Upcoming cascade depth', loc='upper left')
+
+    # Annotate correlation
+    ax.text(0.97, 0.97, 'Spearman r = 0.923\np < 0.0001',
+            transform=ax.transAxes, ha='right', va='top', fontsize=12,
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='wheat', alpha=0.8))
 
     plt.tight_layout()
-    for fmt in ['pdf', 'png']:
-        fig.savefig(Path(output_dir) / f'fig6_rsm.{fmt}', dpi=300, bbox_inches='tight')
+    fig.savefig(FIG_DIR / "fig7_destabilization.png")
     plt.close()
-    print("  Generated fig6_rsm")
+    print("  Saved fig7_destabilization.png")
 
 
-# =====================================================================
-# Main
-# =====================================================================
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", default="/workspace/bridge/artifacts/h_t_data")
-    parser.add_argument("--output_dir", default="/workspace/bridge/artifacts/figures")
-    args = parser.parse_args()
+# ============================================================
+# FIGURE 8: Spectral Radius Profile
+# ============================================================
+def figure8_spectral():
+    """Spectral radius at each count state."""
+    csd = load_json("critical_slowing_down.json")
 
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    counts_list = list(range(15))
+    spectral = [csd["eigenvalue_summary"][str(c)]["spectral_radius"] for c in counts_list]
 
-    print("Generating figures...")
-    print()
+    def carry_depth(c):
+        if c >= 14: return -1
+        xor = c ^ (c + 1)
+        d = 0
+        while xor > 0:
+            d += 1
+            xor >>= 1
+        return d - 1
 
-    # Figures that need h_t data
-    fig1_hero(args.data_dir, args.output_dir)
-    fig4_curvature(args.data_dir, args.output_dir)
-    fig5_topology(args.data_dir, args.output_dir)
-    fig6_rsm(args.data_dir, args.output_dir)
+    depths = [carry_depth(c) for c in counts_list]
+    depth_colors = {-1: '#9E9E9E', 0: '#2196F3', 1: '#FF9800', 2: '#4CAF50', 3: '#F44336'}
 
-    # Figures that only need metric numbers
-    fig3_ablation_cascade(args.data_dir, args.output_dir)
-    supp3_arclength_summary(args.data_dir, args.output_dir)
+    fig, ax = plt.subplots(figsize=(10, 5))
 
-    print()
-    print("Done! Figures saved to:", args.output_dir)
-    print()
+    # Stability boundary
+    ax.axhline(1.0, color='black', linestyle='--', linewidth=1.5, alpha=0.7,
+               label='Stability boundary (rho = 1.0)')
+    ax.fill_between([-0.5, 14.5], 0.9, 1.0, alpha=0.1, color='green')
+    ax.fill_between([-0.5, 14.5], 1.0, 1.35, alpha=0.1, color='red')
 
-    # List what's missing
-    missing = []
-    for label in ['line_seed0', 'scatter_seed0', 'circle_seed0', 'nocount_seed0', 'noslots_seed0']:
-        if not (Path(args.data_dir) / f"{label}.npz").exists():
-            missing.append(label)
-    if missing:
-        print("Missing h_t data for arrangement invariance panels:")
-        for m in missing:
-            print(f"  - {m}")
-        print("Re-run those conditions and extract h_t to enable Figures 2 and full Figure 3.")
+    for c in counts_list:
+        color = depth_colors[depths[c]]
+        marker = 's' if c == 14 else 'o'
+        size = 120 if c == 14 else 80
+        ax.scatter(c, spectral[c], c=color, s=size, marker=marker,
+                  edgecolors='black', linewidth=0.5, zorder=5)
+        ax.text(c, spectral[c] + 0.015, str(c), ha='center', va='bottom', fontsize=9)
+
+    ax.set_xlabel('Count state')
+    ax.set_ylabel('Spectral radius (rho)')
+    ax.set_title('The Controlled Explosion: Mildly Expansive Everywhere Except Terminal State',
+                 fontweight='bold')
+    ax.set_xlim(-0.5, 14.5)
+    ax.set_ylim(0.95, 1.35)
+
+    # Annotations
+    ax.annotate('Sole attractor\n(rho = 0.998)', xy=(14, spectral[14]),
+                xytext=(11.5, 1.02), fontsize=10,
+                arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
+
+    ax.text(0.5, 1.32, 'Mildly expansive', fontsize=11, color='#D32F2F', alpha=0.7)
+    ax.text(0.5, 0.96, 'Contractive (stable)', fontsize=11, color='#2E7D32', alpha=0.7)
+
+    # Legend for depth colors
+    for d, label in [(-1, 'Terminal'), (0, 'Depth 0'), (1, 'Depth 1'),
+                     (2, 'Depth 2'), (3, 'Depth 3')]:
+        marker = 's' if d == -1 else 'o'
+        ax.scatter([], [], c=depth_colors[d], s=80, marker=marker,
+                  label=label, edgecolors='black', linewidth=0.5)
+    ax.legend(title='Upcoming cascade depth', loc='upper right', fontsize=10)
+
+    plt.tight_layout()
+    fig.savefig(FIG_DIR / "fig8_spectral_radius.png")
+    plt.close()
+    print("  Saved fig8_spectral_radius.png")
 
 
+# ============================================================
+# MAIN
+# ============================================================
 if __name__ == "__main__":
-    main()
+    print("Generating publication figures...")
+    print()
+
+    print("[Priority 1] Figure 2: Imagination vs Posterior...")
+    figure2_imagination()
+
+    print("[Priority 2] Figure 4: ESN Control...")
+    figure4_esn()
+
+    print("[Priority 3] Figure 1: Bit Heatmap...")
+    figure1_heatmap()
+
+    print("[Poster] Figure 3: Observation Cliff...")
+    figure3_cliff()
+
+    print("[Poster] Figure 5: Scorecard...")
+    figure5_scorecard()
+
+    print("[Poster] Figure 6: PCA Trajectory...")
+    figure6_pca()
+
+    print("[Poster] Figure 7: Destabilization...")
+    figure7_destabilization()
+
+    print("[Poster] Figure 8: Spectral Radius...")
+    figure8_spectral()
+
+    print()
+    print(f"All figures saved to {FIG_DIR}/")

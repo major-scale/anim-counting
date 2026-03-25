@@ -1,0 +1,246 @@
+{
+  "drift": {
+    "5": {
+      "n": 235,
+      "final_correct_dist": 6.681,
+      "final_nearest_dist": 6.681,
+      "final_residual": 1.523
+    },
+    "10": {
+      "n": 209,
+      "final_correct_dist": 6.932,
+      "final_nearest_dist": 6.932,
+      "final_residual": 1.704
+    },
+    "20": {
+      "n": 167,
+      "final_correct_dist": 7.35,
+      "final_nearest_dist": 7.341,
+      "final_residual": 1.959
+    },
+    "50": {
+      "n": 44,
+      "final_correct_dist": 8.168,
+      "final_nearest_dist": 8.145,
+      "final_residual": 2.408
+    }
+  },
+  "peek": {
+    "5": {
+      "n": 247,
+      "peek_move_mean": 0.965,
+      "peek_move_std": 0.94,
+      "dist_correct_before": 6.692,
+      "dist_correct_after": 6.776,
+      "nearest_correct_pct": 100.0,
+      "update_gate": 0.2758
+    },
+    "10": {
+      "n": 224,
+      "peek_move_mean": 0.901,
+      "peek_move_std": 0.896,
+      "dist_correct_before": 6.964,
+      "dist_correct_after": 7.043,
+      "nearest_correct_pct": 99.6,
+      "update_gate": 0.277
+    },
+    "20": {
+      "n": 175,
+      "peek_move_mean": 0.78,
+      "peek_move_std": 0.799,
+      "dist_correct_before": 7.406,
+      "dist_correct_after": 7.474,
+      "nearest_correct_pct": 94.9,
+      "update_gate": 0.2771
+    },
+    "50": {
+      "n": 54,
+      "peek_move_mean": 0.786,
+      "peek_move_std": 0.737,
+      "dist_correct_before": 8.159,
+      "dist_correct_after": 8.193,
+      "nearest_correct_pct": 90.7,
+      "update_gate": 0.2755
+    }
+  },
+  "gates": {
+    "normal_posterior": {
+      "mean": 0.2771,
+      "min_dim": 0.0935,
+      "max_dim": 0.5744
+    },
+    "blind_5": {
+      "blind_gate": 0.2727,
+      "peek_gate": 0.2758,
+      "ratio": 0.996
+    },
+    "blind_10": {
+      "blind_gate": 0.2729,
+      "peek_gate": 0.277,
+      "ratio": 1.0
+    },
+    "blind_20": {
+      "blind_gate": 0.2712,
+      "peek_gate": 0.2771,
+      "ratio": 1.0
+    },
+    "blind_50": {
+      "blind_gate": 0.2588,
+      "peek_gate": 0.2755,
+      "ratio": 0.994
+    }
+  },
+  "multi_peek": {
+    "1": {
+      "recovery_pct": 99.5,
+      "correct": 221,
+      "total": 222,
+      "dist_correct": 7.024
+    },
+    "2": {
+      "recovery_pct": 99.5,
+      "correct": 215,
+      "total": 216,
+      "dist_correct": 6.722
+    },
+    "5": {
+      "recovery_pct": 100.0,
+      "correct": 199,
+      "total": 199,
+      "dist_correct": 6.503
+    },
+    "10": {
+      "recovery_pct": 100.0,
+      "correct": 175,
+      "total": 175,
+      "dist_correct": 6.419
+    },
+    "20": {
+      "recovery_pct": 100.0,
+      "correct": 132,
+      "total": 132,
+      "dist_correct": 6.424
+    }
+  },
+  "stoch_diversity": {
+    "normal": {
+      "mean": 19.9,
+      "std": 1.7
+    },
+    "blind_10": {
+      "mean": 19.4,
+      "std": 1.6
+    },
+    "blind_20": {
+      "mean": 19.2,
+      "std": 1.7
+    },
+    "blind_50": {
+      "mean": 19.0,
+      "std": 1.9
+    }
+  },
+  "count_specific": {
+    "0": {
+      "depth": 0,
+      "correct": 7,
+      "total": 8,
+      "recovery_pct": 87.5
+    },
+    "1": {
+      "depth": 1,
+      "correct": 22,
+      "total": 23,
+      "recovery_pct": 95.7
+    },
+    "2": {
+      "depth": 0,
+      "correct": 19,
+      "total": 19,
+      "recovery_pct": 100.0
+    },
+    "3": {
+      "depth": 2,
+      "correct": 28,
+      "total": 28,
+      "recovery_pct": 100.0
+    },
+    "4": {
+      "depth": 0,
+      "correct": 24,
+      "total": 24,
+      "recovery_pct": 100.0
+    },
+    "5": {
+      "depth": 1,
+      "correct": 29,
+      "total": 29,
+      "recovery_pct": 100.0
+    },
+    "6": {
+      "depth": 0,
+      "correct": 27,
+      "total": 27,
+      "recovery_pct": 100.0
+    },
+    "7": {
+      "depth": 3,
+      "correct": 40,
+      "total": 41,
+      "recovery_pct": 97.6
+    },
+    "8": {
+      "depth": 0,
+      "correct": 35,
+      "total": 35,
+      "recovery_pct": 100.0
+    },
+    "9": {
+      "depth": 1,
+      "correct": 40,
+      "total": 40,
+      "recovery_pct": 100.0
+    },
+    "10": {
+      "depth": 0,
+      "correct": 40,
+      "total": 40,
+      "recovery_pct": 100.0
+    },
+    "11": {
+      "depth": 2,
+      "correct": 48,
+      "total": 48,
+      "recovery_pct": 100.0
+    },
+    "12": {
+      "depth": 0,
+      "correct": 46,
+      "total": 46,
+      "recovery_pct": 100.0
+    },
+    "13": {
+      "depth": 1,
+      "correct": 47,
+      "total": 47,
+      "recovery_pct": 100.0
+    }
+  },
+  "surgery": {
+    "without": {
+      "accuracy": 0.97,
+      "n": 166,
+      "correct": 161
+    },
+    "with": {
+      "accuracy": 1.0,
+      "n": 166,
+      "correct": 166
+    }
+  },
+  "summary": {
+    "mean_centroid_distance": 6.774,
+    "pca_variance_explained": 0.973,
+    "mechanism": "Posterior converges to off-manifold fixed point in correct Voronoi cell. GRU gates innocent (identical across conditions). Multi-peek plateaus at dist~6.4 \u2014 permanent off-manifold equilibrium."
+  }
+}
