@@ -6,7 +6,8 @@ Runs the complete Anim analysis battery on a trained symbolic RSSM checkpoint,
 then compares representations against the physical binary specialist.
 
 Usage:
-    python eval_symbolic_battery.py <checkpoint_path> [--physical_battery <path>]
+    python eval_symbolic_battery.py <checkpoint_path> [--env clean|rich] [--physical_battery <path>]
+    python eval_symbolic_battery.py --three-way <ckpt_A> <ckpt_B> [--physical_battery <path>]
 
 Outputs:
     artifacts/symbolic_binary_s{seed}/
@@ -32,7 +33,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from symbolic_binary_env import (
     SymbolicBinaryEnv, NUM_BITS, MAX_COUNT, int_to_bits, carry_depth,
 )
+from symbolic_binary_env_rich import RichSymbolicBinaryEnv
 from symbolic_rssm import SymbolicRSSM, DETER_DIM, STOCH_FLAT, FEAT_DIM
+from train_symbolic import make_env
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -59,7 +62,8 @@ PHYSICAL_BATTERY = Path("/workspace/projects/jamstack-v1/bridge/artifacts/batter
 # 1. Data collection
 # ---------------------------------------------------------------------------
 
-def collect_hidden_states(model, device, n_cycles=2, n_episodes=10, seed=42):
+def collect_hidden_states(model, device, n_cycles=2, n_episodes=10, seed=42,
+                          env_type="clean"):
     """Collect h_t (deter) from symbolic specialist across multiple episodes."""
     model.eval()
 
@@ -67,8 +71,8 @@ def collect_hidden_states(model, device, n_cycles=2, n_episodes=10, seed=42):
     all_carry, all_ep_ids, all_timesteps = [], [], []
 
     for ep_idx in range(n_episodes):
-        env = SymbolicBinaryEnv(steps_per_count=20, n_cycles=n_cycles,
-                                seed=seed + ep_idx)
+        env = make_env(env_type, steps_per_count=20, n_cycles=n_cycles,
+                       seed=seed + ep_idx)
         obs = env.reset()
         h, z = model.initial_state(1, device)
         action = torch.zeros(1, 1, device=device)
@@ -522,6 +526,8 @@ def make_figures(results, cross_results, cross_data, output_dir):
 def main():
     parser = argparse.ArgumentParser(description="Symbolic binary specialist evaluation battery")
     parser.add_argument("checkpoint", type=str, help="Path to checkpoint .pt file or directory")
+    parser.add_argument("--env", type=str, default="clean", choices=["clean", "rich"],
+                       help="Environment variant (clean=A, rich=B)")
     parser.add_argument("--physical_battery", type=str, default=str(PHYSICAL_BATTERY),
                        help="Path to physical specialist battery.npz")
     parser.add_argument("--n_episodes", type=int, default=10)
@@ -537,8 +543,10 @@ def main():
     if ckpt_path.is_dir():
         ckpt_path = ckpt_path / "latest.pt"
 
+    env_type = args.env
+
     print("=" * 60)
-    print("Symbolic Binary Specialist — Full Analysis Battery")
+    print(f"Symbolic Binary Specialist — Full Analysis Battery (env={env_type})")
     print("=" * 60)
     print(f"  Checkpoint: {ckpt_path}")
 
@@ -555,7 +563,8 @@ def main():
     # Collect hidden states
     print(f"\nCollecting hidden states ({args.n_episodes} episodes, {args.n_cycles} cycles)...")
     data = collect_hidden_states(model, device, n_cycles=args.n_cycles,
-                                n_episodes=args.n_episodes, seed=args.seed)
+                                n_episodes=args.n_episodes, seed=args.seed,
+                                env_type=env_type)
     print(f"  Collected {len(data['h_t'])} timesteps")
 
     # Save battery data
@@ -641,5 +650,99 @@ def main():
     print(f"\nAll outputs saved to: {output_dir}")
 
 
+# ---------------------------------------------------------------------------
+# 6. Three-way comparison (Physical × Symbolic A × Symbolic B)
+# ---------------------------------------------------------------------------
+
+def three_way_comparison():
+    """Run pairwise cross-modal comparison across all three specialists."""
+    parser = argparse.ArgumentParser(description="Three-way specialist comparison")
+    parser.add_argument("--ckpt_a", type=str, required=True, help="Symbolic A checkpoint")
+    parser.add_argument("--ckpt_b", type=str, required=True, help="Symbolic B checkpoint")
+    parser.add_argument("--physical_battery", type=str, default=str(PHYSICAL_BATTERY))
+    parser.add_argument("--output_dir", type=str, default="")
+    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--n_episodes", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    device = torch.device(args.device)
+
+    print("=" * 60)
+    print("Three-Way Comparison: Physical × Symbolic A × Symbolic B")
+    print("=" * 60)
+
+    # Load all three datasets
+    # Physical
+    phys = np.load(args.physical_battery, allow_pickle=True)
+    h_phys, c_phys, b_phys = phys["h_t"], phys["counts"], phys["bits"]
+    print(f"  Physical: {len(h_phys)} timesteps")
+
+    # Symbolic A (clean)
+    ckpt_a = Path(args.ckpt_a)
+    if ckpt_a.is_dir():
+        ckpt_a = ckpt_a / "latest.pt"
+    model_a = SymbolicRSSM().to(device)
+    model_a.load_state_dict(torch.load(ckpt_a, map_location=device)["model_state_dict"])
+    model_a.eval()
+    data_a = collect_hidden_states(model_a, device, n_episodes=args.n_episodes,
+                                   seed=args.seed, env_type="clean")
+    print(f"  Symbolic A: {len(data_a['h_t'])} timesteps")
+
+    # Symbolic B (rich)
+    ckpt_b = Path(args.ckpt_b)
+    if ckpt_b.is_dir():
+        ckpt_b = ckpt_b / "latest.pt"
+    model_b = SymbolicRSSM().to(device)
+    model_b.load_state_dict(torch.load(ckpt_b, map_location=device)["model_state_dict"])
+    model_b.eval()
+    data_b = collect_hidden_states(model_b, device, n_episodes=args.n_episodes,
+                                   seed=args.seed, env_type="rich")
+    print(f"  Symbolic B: {len(data_b['h_t'])} timesteps")
+
+    # Run all 3 pairwise comparisons
+    pairs = [
+        ("Physical ↔ Symbolic A", h_phys, c_phys, b_phys,
+         data_a["h_t"], data_a["counts"], data_a["bits"]),
+        ("Physical ↔ Symbolic B", h_phys, c_phys, b_phys,
+         data_b["h_t"], data_b["counts"], data_b["bits"]),
+        ("Symbolic A ↔ Symbolic B", data_a["h_t"], data_a["counts"], data_a["bits"],
+         data_b["h_t"], data_b["counts"], data_b["bits"]),
+    ]
+
+    all_results = {}
+    for name, h1, c1, b1, h2, c2, b2 in pairs:
+        print(f"\n  {name}...")
+        results, _ = run_cross_modal(h1, c1, b1, h2, c2, b2)
+        all_results[name] = results
+
+    # Print comparison table
+    print("\n" + "=" * 80)
+    print("THREE-WAY COMPARISON TABLE")
+    print("=" * 80)
+    metrics = ["rdm_spearman_rho", "probe_cosine_mean", "cka_centroids",
+               "stitching_r2_test", "eigenvalue_shape_rho"]
+    header = f"{'Metric':<25}" + "".join(f"{p[:20]:<22}" for p, *_ in pairs)
+    print(header)
+    print("-" * 80)
+    for m in metrics:
+        row = f"{m:<25}"
+        for name, *_ in pairs:
+            v = all_results[name].get(m)
+            row += f"{v:<22.4f}" if isinstance(v, float) else f"{'N/A':<22}"
+        print(row)
+
+    # Save
+    out = Path(args.output_dir) if args.output_dir else Path(ckpt_a).parent.parent
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "three_way_comparison.json", "w") as f:
+        json.dump(all_results, f, indent=2)
+    print(f"\nSaved to {out / 'three_way_comparison.json'}")
+
+
 if __name__ == "__main__":
-    main()
+    if "--three-way" in sys.argv:
+        sys.argv.remove("--three-way")
+        three_way_comparison()
+    else:
+        main()

@@ -9,10 +9,12 @@ token observations, so training should be comparable to or faster than the
 physical binary specialist.
 
 Usage:
-    python train_symbolic.py [--steps 500000] [--device cpu] [--seed 0]
+    python train_symbolic.py [--env clean] [--steps 500000] [--device auto] [--seed 0]
+    python train_symbolic.py --env rich --steps 500000 --logdir symbolic_B
+    python train_symbolic.py --random-baseline [--env clean|rich]
 
 Saves:
-    artifacts/checkpoints/symbolic_binary_s{seed}/
+    artifacts/checkpoints/{logdir or symbolic_{env}_s{seed}}/
         latest.pt          — latest checkpoint (model + optimizer + step)
         step_{N}.pt        — periodic checkpoints
         metrics.json       — training metrics history
@@ -34,10 +36,23 @@ import torch.nn.functional as F
 # Local imports
 sys.path.insert(0, str(Path(__file__).parent))
 from symbolic_binary_env import SymbolicBinaryEnv, NUM_BITS, MAX_COUNT, int_to_bits
+from symbolic_binary_env_rich import RichSymbolicBinaryEnv
 from symbolic_rssm import (
     SymbolicRSSM, compute_total_loss, count_params,
     DETER_DIM, STOCH_FLAT, NUM_BITS as RSSM_BITS,
 )
+
+
+def make_env(env_type, steps_per_count=20, n_cycles=1, seed=0):
+    """Factory for clean (A) or rich (B) symbolic environments."""
+    if env_type == "clean":
+        return SymbolicBinaryEnv(steps_per_count=steps_per_count,
+                                 n_cycles=n_cycles, seed=seed)
+    elif env_type == "rich":
+        return RichSymbolicBinaryEnv(steps_per_count=steps_per_count,
+                                     n_cycles=n_cycles, seed=seed)
+    else:
+        raise ValueError(f"Unknown env type: {env_type}. Use 'clean' or 'rich'.")
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +72,7 @@ DEFAULT_CONFIG = {
     "seed": 0,
 
     # Environment
+    "env": "clean",           # "clean" (Variant A) or "rich" (Variant B)
     "steps_per_count": 20,
     "n_cycles": 1,
 
@@ -64,9 +80,10 @@ DEFAULT_CONFIG = {
     "checkpoint_every": 100_000,
     "log_every": 1000,
     "eval_every": 50_000,
+    "logdir": "",             # Custom output dir name (default: symbolic_{env}_s{seed})
 
     # Device
-    "device": "cpu",
+    "device": "auto",
 }
 
 
@@ -156,10 +173,10 @@ def collect_episode(env):
 # Quick evaluation
 # ---------------------------------------------------------------------------
 
-def quick_eval(model, device, seed=42):
+def quick_eval(model, device, seed=42, env_type="clean"):
     """Run a few episodes and measure token prediction + count probe accuracy."""
     model.eval()
-    env = SymbolicBinaryEnv(steps_per_count=20, n_cycles=2, seed=seed)
+    env = make_env(env_type, steps_per_count=20, n_cycles=2, seed=seed)
 
     all_h_t = []
     all_counts = []
@@ -254,14 +271,16 @@ def main():
     config = vars(args)
 
     # Device
-    device = torch.device(config["device"])
-    if config["device"] == "auto":
+    device_str = config["device"]
+    if device_str == "auto":
         if torch.cuda.is_available():
             device = torch.device("cuda:0")
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
+    else:
+        device = torch.device(device_str)
     config["device"] = str(device)
 
     # Seed
@@ -270,9 +289,12 @@ def main():
     np.random.seed(seed)
     rng = np.random.RandomState(seed)
 
+    env_type = config["env"]
+
     # Output directory
     artifacts_dir = Path(__file__).parent.parent / "artifacts"
-    output_dir = artifacts_dir / "checkpoints" / f"symbolic_binary_s{seed}"
+    logdir_name = config["logdir"] or f"symbolic_{env_type}_s{seed}"
+    output_dir = artifacts_dir / "checkpoints" / logdir_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save config
@@ -283,6 +305,7 @@ def main():
     print("Symbolic Binary Specialist — Training")
     print("=" * 60)
     print(f"  Device:         {device}")
+    print(f"  Env:            {env_type}")
     print(f"  Seed:           {seed}")
     print(f"  Steps:          {config['steps']:,}")
     print(f"  Batch:          {config['batch_size']} × {config['batch_length']}")
@@ -310,11 +333,10 @@ def main():
     buffer = ReplayBuffer(max_episodes=10000)
 
     # Environment for data collection
-    env = SymbolicBinaryEnv(
-        steps_per_count=config["steps_per_count"],
-        n_cycles=config["n_cycles"],
-        seed=seed,
-    )
+    env = make_env(env_type,
+                   steps_per_count=config["steps_per_count"],
+                   n_cycles=config["n_cycles"],
+                   seed=seed)
 
     # Prefill
     print(f"Prefilling {config['prefill']} steps...")
@@ -396,7 +418,7 @@ def main():
         # Eval checkpoint
         if step % config["eval_every"] == 0:
             print(f"\n  Eval at step {step:,}...")
-            eval_metrics = quick_eval(model, device, seed=42)
+            eval_metrics = quick_eval(model, device, seed=42, env_type=env_type)
             print(f"    token_acc={eval_metrics['token_acc']:.4f} "
                   f"count_exact={eval_metrics['count_exact']:.4f} "
                   f"bit_accs={[f'{a:.3f}' for a in eval_metrics['bit_accs']]} "
@@ -427,7 +449,7 @@ def main():
           f"({config['steps']/elapsed:.0f} steps/s)")
 
     print("\nFinal evaluation...")
-    eval_metrics = quick_eval(model, device, seed=42)
+    eval_metrics = quick_eval(model, device, seed=42, env_type=env_type)
     for k, v in eval_metrics.items():
         print(f"  {k}: {v}")
 
@@ -443,10 +465,10 @@ def main():
 # Random baseline
 # ---------------------------------------------------------------------------
 
-def run_random_baseline(device="cpu", n_seeds=3):
+def run_random_baseline(device="cpu", n_seeds=3, env_type="clean"):
     """Run untrained random RSSM on same observation stream for comparison."""
     print("=" * 60)
-    print("Random Baseline — Untrained SymbolicRSSM")
+    print(f"Random Baseline — Untrained SymbolicRSSM (env={env_type})")
     print("=" * 60)
 
     results = []
@@ -454,7 +476,7 @@ def run_random_baseline(device="cpu", n_seeds=3):
         torch.manual_seed(s + 100)
         model = SymbolicRSSM().to(device)
         model.eval()
-        metrics = quick_eval(model, device, seed=42)
+        metrics = quick_eval(model, device, seed=42, env_type=env_type)
         print(f"  Seed {s}: token_acc={metrics['token_acc']:.4f} "
               f"count_exact={metrics['count_exact']:.4f} "
               f"bit_accs={[f'{a:.3f}' for a in metrics['bit_accs']]} "
@@ -473,6 +495,13 @@ def run_random_baseline(device="cpu", n_seeds=3):
 if __name__ == "__main__":
     if "--random-baseline" in sys.argv:
         sys.argv.remove("--random-baseline")
-        run_random_baseline()
+        # Parse --env from remaining args
+        env_t = "clean"
+        if "--env" in sys.argv:
+            idx = sys.argv.index("--env")
+            env_t = sys.argv[idx + 1]
+            sys.argv.pop(idx + 1)
+            sys.argv.pop(idx)
+        run_random_baseline(env_type=env_t)
     else:
         main()
