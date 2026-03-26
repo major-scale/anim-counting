@@ -1,0 +1,53 @@
+{
+  "Physical \u2194 Symbolic A": {
+    "rdm_spearman_rho": 0.5433754924320962,
+    "rdm_spearman_p": 2.1065848693698517e-09,
+    "rsa_hamming_symbolic": 0.8108491827286567,
+    "rsa_hamming_physical": 0.18629427504013765,
+    "probe_cosine_bit0": -0.0009366851300001144,
+    "probe_cosine_bit1": 0.0897844061255455,
+    "probe_cosine_bit2": -0.03723812475800514,
+    "probe_cosine_bit3": -0.014100945554673672,
+    "probe_cosine_mean": 0.03551504039205611,
+    "stitching_r2_train": 0.6793463826179504,
+    "stitching_r2_test": -472.7418518066406,
+    "stitching_n_samples": 6000,
+    "cka_centroids": 0.7730108984176668,
+    "cka_full": 0.20595281751754807,
+    "eigenvalue_shape_rho": 1.0
+  },
+  "Physical \u2194 Symbolic B": {
+    "rdm_spearman_rho": 0.6322828115280945,
+    "rdm_spearman_p": 4.682530576224614e-13,
+    "rsa_hamming_symbolic": 0.8108491827286567,
+    "rsa_hamming_physical": 0.30615061232187063,
+    "probe_cosine_bit0": -0.026471080258488655,
+    "probe_cosine_bit1": 0.045108310878276825,
+    "probe_cosine_bit2": 0.03781597688794136,
+    "probe_cosine_bit3": -0.03353085741400719,
+    "probe_cosine_mean": 0.03573155635967851,
+    "stitching_r2_train": 0.7238509654998779,
+    "stitching_r2_test": -2140.251953125,
+    "stitching_n_samples": 6000,
+    "cka_centroids": 0.7263947656469245,
+    "cka_full": 0.3384097229676313,
+    "eigenvalue_shape_rho": 1.0
+  },
+  "Symbolic A \u2194 Symbolic B": {
+    "rdm_spearman_rho": 0.6016112230015972,
+    "rdm_spearman_p": 3.6862571340276784e-13,
+    "rsa_hamming_symbolic": 0.21225929623604847,
+    "rsa_hamming_physical": 0.32029458720702064,
+    "probe_cosine_bit0": 0.022872893139719963,
+    "probe_cosine_bit1": 0.0515994094312191,
+    "probe_cosine_bit2": -0.04929453134536743,
+    "probe_cosine_bit3": -0.03146562725305557,
+    "probe_cosine_mean": 0.03880811529234052,
+    "stitching_r2_train": 0.9616429209709167,
+    "stitching_r2_test": -38.642913818359375,
+    "stitching_n_samples": 6400,
+    "cka_centroids": 0.6664980923905812,
+    "cka_full": 0.7278590195218176,
+    "eigenvalue_shape_rho": 1.0
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "rdm_spearman_rho": 0.6322828115280945,
+  "rdm_spearman_p": 4.682530576224614e-13,
+  "rsa_hamming_symbolic": 0.30615061232187063,
+  "rsa_hamming_physical": 0.8108491827286567,
+  "probe_cosine_bit0": -0.026471080258488655,
+  "probe_cosine_bit1": 0.045108310878276825,
+  "probe_cosine_bit2": 0.03781597688794136,
+  "probe_cosine_bit3": -0.03353085741400719,
+  "probe_cosine_mean": 0.03573155635967851,
+  "stitching_r2_train": 0.4072876572608948,
+  "stitching_r2_test": -1049.801513671875,
+  "stitching_n_samples": 6000,
+  "cka_centroids": 0.7263953140943906,
+  "cka_full": 0.3384100442357866,
+  "eigenvalue_shape_rho": 1.0
+}
