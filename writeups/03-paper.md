@@ -264,7 +264,9 @@ Step magnitude scales with carry depth (r = 0.98):
 | 2 (2-bit carry) | 3→4, 11→12 | 8.58 | 2 |
 | 3 (full cascade) | 7→8 | 9.40 | 1 |
 
-Per-bit linear probes project each step vector onto the four probe weight directions. **Sign agreement: 25/25 (100%)** across all changed bits in all 15 transitions. Cross-talk on unchanged bits: ~0.001. The model discovered four orthogonal bit-flip axes in 512-dim space and composes them linearly to represent any transition.
+Magnitude statistics here exclude transition 14→15 (see Appendix C note on terminal-state sampling); directional statistics below include it.
+
+Per-bit linear probes project each step vector onto the four probe weight directions. **Sign agreement: 26/26 (100%)** across all changed bits in all 15 transitions. Cross-talk on unchanged bits: ~0.001. The model discovered four orthogonal bit-flip axes in 512-dim space and composes them linearly to represent any transition. The step vectors themselves require 5 PCA components to capture 90% of variance (cf. 11 PCs for the counting-world successor). The four bit-flip directions account for 16% of that variance: they are a small, clean, generalizing subspace within a larger step-vector structure whose dominant components lie orthogonal to the bit-flip axes and likely encode shared count-magnitude and transition-type information. Transition 14→15 has a lower reconstruction cosine (0.19 vs median ~0.29) reflecting centroid-estimation noise — count=15 is the terminal state and is sampled once per episode, yielding ~15 stable samples versus 500+ for other counts (see Appendix C note on terminal-state sampling). Sign agreement and the bit-0 projection direction are unaffected.
 
 Cosine similarity between within-depth transition pairs is high (0.63–0.86); between depth-0 and deeper depths it is strongly *negative* (−0.47 to −0.50). The model represents not just "what comes next" but "what kind of computational event is happening."
 
@@ -603,6 +605,8 @@ Grid world: 1400×1000 continuous units; bot speed 8 units/step; pickup radius 6
 ## Appendix C: Training details
 
 DreamerV3 with MLP encoder/decoder. RSSM: 512-dim GRU deterministic + 32×32 discrete stochastic (~12M params). Adam optimizer, default DreamerV3 learning rates. Hardware: Apple MPS and NVIDIA RTX 4090. Counting baseline: 200K–300K gradient steps. Binary specialist: 300K steps. Unifier: 70K steps, CPU.
+
+**Data collection notes.** An earlier version of the binary-battery data-collection loop read environment state before stepping in a `while not done` loop, which omitted the final 14→15 transition when the env set `done=True` simultaneously with the last count increment. This was corrected prior to the reported results. Terminal-state sampling is asymmetric across counts: count=15 occurs once per episode (at episode termination), yielding ~15 stable samples versus 500+ for other counts, which undermines centroid precision. Magnitude-based statistics (step magnitude, CV, cosine pairs) therefore exclude transition 14→15; directional statistics (sign agreement, orthogonality, decomposition, per-bit sign) are unaffected by centroid magnitude and include all 15 transitions.
 
 ## Appendix D: Full ablation condition specifications
 

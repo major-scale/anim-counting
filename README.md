@@ -164,9 +164,11 @@ The counting-world successor was a smooth 11-PC rotation. The binary successor i
 | 2 (2-bit carry) | 3→4, 11→12 | 8.58 |
 | 3 (full cascade) | 7→8 | 9.40 |
 
-Every simple flip looks identical (CV = 0.025). Every carry of a given depth looks identical. The representational displacement scales almost exactly with the number of bits that physically flip.
+Every simple flip looks identical (CV = 0.025).[^sampling] Every carry of a given depth looks identical. The representational displacement scales almost exactly with the number of bits that physically flip.
 
-**Step vectors decompose linearly into four orthogonal bit-flip directions.** We trained per-bit linear probes and projected each step vector onto the four probe weight directions. Sign agreement across all 25 changed bits in all 15 transitions: **100%**. Cross-talk on unchanged bits: ~0.001. The model discovered four orthogonal "bit-flip" axes in 512-dim space and composes them linearly to represent any transition. It independently invented a coordinate system for binary arithmetic.
+**Step vectors decompose linearly into four orthogonal bit-flip directions.** We trained per-bit linear probes and projected each step vector onto the four probe weight directions. Sign agreement across all 26 changed bits in all 15 transitions: **100%**. Cross-talk on unchanged bits: ~0.001. The model discovered four orthogonal "bit-flip" axes in 512-dim space and composes them linearly to represent any transition. The step vectors themselves require 5 PCA components to capture 90% of variance (cf. 11 PCs for the counting-world successor); the four bit-flip directions account for 16% of that variance. They are a small, clean, generalizing subspace within a larger step-vector structure whose dominant components lie orthogonal to the bit-flip axes and likely encode shared count-magnitude and transition-type information. What the model factored out cleanly was binary arithmetic, embedded in a representation that is mostly about other things.
+
+[^sampling]: Count=15 is the terminal state and is sampled once per episode (~15 stable samples versus 500+ for other counts), which undermines centroid precision. Magnitude-based statistics (CV, step magnitude) therefore exclude 14→15; directional statistics (sign agreement, decomposition) include it.
 
 **The model anticipates carries from the bit state.** We measured how early the hidden state begins shifting toward the next count:
 
@@ -228,7 +230,7 @@ We also observed a surprising pattern in *timing*: a brief regularization pulse 
 
 3. **Different physics produce different geometries, in the same architecture.** Grid world → smooth ordinal manifold. Binary world → Hamming hypercube with factored bit-flip axes. Same DreamerV3 RSSM, same training objective. This is the anima-bridge thesis.
 
-4. **The binary successor decomposes compositionally.** Four orthogonal bit-flip directions, 100% sign agreement across all transitions, cross-talk ~0.001. The model invented a coordinate system for binary arithmetic.
+4. **The binary successor decomposes compositionally.** Four orthogonal bit-flip directions, 100% sign agreement across all transitions, cross-talk ~0.001. The model cleanly factored binary arithmetic out of a larger step-vector structure.
 
 5. **The binary model internally simulates carry cascades.** Imagination mode (no observations) reproduces the sequential LSB→MSB cascade at the same pace as the posterior. Active simulation, not passive interpolation.
 

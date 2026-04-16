@@ -1,0 +1,381 @@
+{
+  "scheme_A_stratified_holdout": {
+    "heldout_transitions": [
+      "2->3",
+      "5->6",
+      "11->12",
+      "7->8"
+    ],
+    "training_transitions": [
+      "0->1",
+      "1->2",
+      "3->4",
+      "4->5",
+      "6->7",
+      "8->9",
+      "9->10",
+      "10->11",
+      "12->13",
+      "13->14",
+      "14->15"
+    ],
+    "probe_accuracies_heldout_trained": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "probe_accuracies_full_trained": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "nonheldout_baseline": {
+      "aggregate_sign_agreement": 1.0,
+      "aggregate_crosstalk_mean": 0.005835716679542496,
+      "aggregate_reconstruction_cosine": 0.26977549809791646
+    },
+    "full_baseline": {
+      "aggregate_sign_agreement": 1.0,
+      "aggregate_crosstalk_mean": 0.00529992373583745,
+      "aggregate_reconstruction_cosine": 0.27469205591268725
+    },
+    "heldout_results": {
+      "per_transition": [
+        {
+          "transition": "2->3",
+          "carry_depth": 0,
+          "sign_agreement": 1.0,
+          "crosstalk": 0.014414094740547815,
+          "reconstruction_cosine": 0.253578693180028
+        },
+        {
+          "transition": "5->6",
+          "carry_depth": 1,
+          "sign_agreement": 1.0,
+          "crosstalk": 0.0007108805097888731,
+          "reconstruction_cosine": 0.31291361754122715
+        },
+        {
+          "transition": "11->12",
+          "carry_depth": 2,
+          "sign_agreement": 1.0,
+          "crosstalk": 0.0001809973122575868,
+          "reconstruction_cosine": 0.2882076767297255
+        },
+        {
+          "transition": "7->8",
+          "carry_depth": 3,
+          "sign_agreement": 1.0,
+          "crosstalk": 0.0,
+          "reconstruction_cosine": 0.2981503721622473
+        }
+      ],
+      "aggregate_sign_agreement": 1.0,
+      "aggregate_crosstalk_mean": 0.0038264931406485686,
+      "aggregate_reconstruction_cosine": 0.288212589903307
+    },
+    "full_results_per_transition": [
+      {
+        "transition": "0->1",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0007951800243358329,
+        "reconstruction_cosine": 0.25135953697533564
+      },
+      {
+        "transition": "1->2",
+        "carry_depth": 1,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.00020398801819219325,
+        "reconstruction_cosine": 0.32815277730639203
+      },
+      {
+        "transition": "2->3",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.014414094740547815,
+        "reconstruction_cosine": 0.253578693180028
+      },
+      {
+        "transition": "3->4",
+        "carry_depth": 2,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0011996409793780332,
+        "reconstruction_cosine": 0.3062673926252034
+      },
+      {
+        "transition": "4->5",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0007351517040456781,
+        "reconstruction_cosine": 0.26104881158174387
+      },
+      {
+        "transition": "5->6",
+        "carry_depth": 1,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0007108805097888731,
+        "reconstruction_cosine": 0.31291361754122715
+      },
+      {
+        "transition": "6->7",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0443241198158813,
+        "reconstruction_cosine": 0.23668847663581924
+      },
+      {
+        "transition": "7->8",
+        "carry_depth": 3,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0,
+        "reconstruction_cosine": 0.2981503721622473
+      },
+      {
+        "transition": "8->9",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0012302011788747945,
+        "reconstruction_cosine": 0.2660989885419206
+      },
+      {
+        "transition": "9->10",
+        "carry_depth": 1,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0005768031456222263,
+        "reconstruction_cosine": 0.3054178490963567
+      },
+      {
+        "transition": "10->11",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.009134396608344055,
+        "reconstruction_cosine": 0.25256448013651306
+      },
+      {
+        "transition": "11->12",
+        "carry_depth": 2,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0001809973122575868,
+        "reconstruction_cosine": 0.2882076767297255
+      },
+      {
+        "transition": "12->13",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0004225781207291796,
+        "reconstruction_cosine": 0.256108735722956
+      },
+      {
+        "transition": "13->14",
+        "carry_depth": 1,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.00022756512649646122,
+        "reconstruction_cosine": 0.31020321861008215
+      },
+      {
+        "transition": "14->15",
+        "carry_depth": 0,
+        "sign_agreement": 1.0,
+        "crosstalk": 0.0053432587530677115,
+        "reconstruction_cosine": 0.1936202118447582
+      }
+    ]
+  },
+  "scheme_B_leave_depth_out": {
+    "per_depth": [
+      {
+        "heldout_depth": 0,
+        "n_heldout_transitions": 8,
+        "heldout_transitions": [
+          "0->1",
+          "2->3",
+          "4->5",
+          "6->7",
+          "8->9",
+          "10->11",
+          "12->13",
+          "14->15"
+        ],
+        "aggregate_sign_agreement": 1.0,
+        "aggregate_crosstalk_mean": 0.013802987538875898,
+        "aggregate_reconstruction_cosine": 0.2586726317497152,
+        "per_transition": [
+          {
+            "transition": "0->1",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.031209832791610843,
+            "reconstruction_cosine": 0.25609538544846955
+          },
+          {
+            "transition": "2->3",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.014530590167941915,
+            "reconstruction_cosine": 0.26680246200486596
+          },
+          {
+            "transition": "4->5",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0007320720159049725,
+            "reconstruction_cosine": 0.27554445385756554
+          },
+          {
+            "transition": "6->7",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.044647982036412674,
+            "reconstruction_cosine": 0.24711482956148811
+          },
+          {
+            "transition": "8->9",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0010295272049045403,
+            "reconstruction_cosine": 0.2809923968664046
+          },
+          {
+            "transition": "10->11",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.009079274692665897,
+            "reconstruction_cosine": 0.2661857944498054
+          },
+          {
+            "transition": "12->13",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.00036465997917223335,
+            "reconstruction_cosine": 0.2704137756147255
+          },
+          {
+            "transition": "14->15",
+            "carry_depth": 0,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.008829961422394113,
+            "reconstruction_cosine": 0.20623195619439724
+          }
+        ]
+      },
+      {
+        "heldout_depth": 1,
+        "n_heldout_transitions": 4,
+        "heldout_transitions": [
+          "1->2",
+          "5->6",
+          "9->10",
+          "13->14"
+        ],
+        "aggregate_sign_agreement": 1.0,
+        "aggregate_crosstalk_mean": 0.0004298092000249384,
+        "aggregate_reconstruction_cosine": 0.3141718656385145,
+        "per_transition": [
+          {
+            "transition": "1->2",
+            "carry_depth": 1,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.00020398801819219325,
+            "reconstruction_cosine": 0.32815277730639203
+          },
+          {
+            "transition": "5->6",
+            "carry_depth": 1,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0007108805097888731,
+            "reconstruction_cosine": 0.31291361754122715
+          },
+          {
+            "transition": "9->10",
+            "carry_depth": 1,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0005768031456222263,
+            "reconstruction_cosine": 0.3054178490963567
+          },
+          {
+            "transition": "13->14",
+            "carry_depth": 1,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.00022756512649646122,
+            "reconstruction_cosine": 0.31020321861008215
+          }
+        ]
+      },
+      {
+        "heldout_depth": 2,
+        "n_heldout_transitions": 2,
+        "heldout_transitions": [
+          "3->4",
+          "11->12"
+        ],
+        "aggregate_sign_agreement": 1.0,
+        "aggregate_crosstalk_mean": 0.00069031914581781,
+        "aggregate_reconstruction_cosine": 0.2972375346774645,
+        "per_transition": [
+          {
+            "transition": "3->4",
+            "carry_depth": 2,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0011996409793780332,
+            "reconstruction_cosine": 0.3062673926252034
+          },
+          {
+            "transition": "11->12",
+            "carry_depth": 2,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0001809973122575868,
+            "reconstruction_cosine": 0.2882076767297255
+          }
+        ]
+      },
+      {
+        "heldout_depth": 3,
+        "n_heldout_transitions": 1,
+        "heldout_transitions": [
+          "7->8"
+        ],
+        "aggregate_sign_agreement": 1.0,
+        "aggregate_crosstalk_mean": 0.0,
+        "aggregate_reconstruction_cosine": 0.2981503721622473,
+        "per_transition": [
+          {
+            "transition": "7->8",
+            "carry_depth": 3,
+            "sign_agreement": 1.0,
+            "crosstalk": 0.0,
+            "reconstruction_cosine": 0.2981503721622473
+          }
+        ]
+      }
+    ]
+  },
+  "orthogonality_heldout": {
+    "full_training": {
+      "pairwise_cosines": {
+        "w0_w1": 0.11460153758525848,
+        "w0_w2": 0.03399554640054703,
+        "w0_w3": 0.06358882784843445,
+        "w1_w2": 0.1250251829624176,
+        "w1_w3": 0.032280825078487396,
+        "w2_w3": -0.022385019809007645
+      },
+      "max_absolute_cosine": 0.1250251829624176
+    },
+    "heldout_training_no_depth3": {
+      "pairwise_cosines": {
+        "w0_w1": 0.11460153758525848,
+        "w0_w2": 0.03399554640054703,
+        "w0_w3": 0.06358882784843445,
+        "w1_w2": 0.1250251829624176,
+        "w1_w3": 0.032280825078487396,
+        "w2_w3": -0.022385019809007645
+      },
+      "max_absolute_cosine": 0.1250251829624176
+    }
+  },
+  "outcome_classification": "G2",
+  "notes": "The decomposition partially generalizes. The four bit-flip directions capture most of the step vector structure on held-out transitions, but with reduced fidelity compared to the full-data baseline. The writeup should soften from \"independently invented a coordinate system\" to \"approximately decomposes into four primary bit-flip directions, with residual transition-specific structure.\""
+}

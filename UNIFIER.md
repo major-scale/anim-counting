@@ -107,7 +107,9 @@ We trained per-bit linear probes and projected each step vector onto the four pr
 | 3&rarr;4 | &minus;1.403 | **&minus;1.437** | **+1.458** | +0.002 | &minus;&minus;+0 |
 | 7&rarr;8 | **&minus;1.354** | **&minus;1.363** | **&minus;1.415** | **+1.649** | &minus;&minus;&minus;+ |
 
-Sign agreement: **25/25 (100%)** across all changed bits in all transitions. Cross-talk for unchanged bits: ~0.001. The model has discovered four orthogonal "bit-flip" axes in 512-dimensional space and composes them linearly to represent any transition. It independently invented a coordinate system for binary arithmetic.
+Sign agreement: **26/26 (100%)** across all changed bits in all 15 transitions. Cross-talk for unchanged bits: ~0.001. The model has discovered four orthogonal "bit-flip" axes in 512-dimensional space and composes them linearly to represent any transition. The step vectors themselves require 5 PCA components to capture 90% of variance (cf. 11 PCs for the counting-world successor); the four bit-flip directions account for 16% of that variance. They are a small, clean, generalizing subspace within a larger step-vector structure whose dominant components lie orthogonal to the bit-flip axes and likely encode shared count-magnitude and transition-type information. What the model factored out cleanly was binary arithmetic, embedded in a representation that is mostly about other things.
+
+Note on sampling: count=15 is the terminal state and is sampled once per episode (~15 stable samples versus 500+ for other counts), which undermines centroid precision. Magnitude-based statistics above (step magnitude table, cosine similarity matrix, both over 14 transitions) exclude transition 14→15; directional statistics (sign agreement, decomposition) include all 15 transitions.
 
 **Transitions group by carry type, not by count value.**
 
