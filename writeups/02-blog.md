@@ -44,7 +44,7 @@ We then ask: does count appear as a geometrically structured feature of h_t?
 
 **RSA.** Spearman correlation between the centroid RDM and |c_i − c_j|: ρ = 0.982. Ordinal structure intact.
 
-Five seeds, 50K–300K training steps, different hardware (MPS and RTX 4090). Every single one: mean GHE 0.329, topology unanimous, RSA > 0.975.
+Five seeds, 50K–300K training steps, different hardware (MPS and RTX 4090). Every single one: mean GHE 0.329, topology unanimous, RSA > 0.975. *Source: `artifacts/reports/replication_summary.json`.*
 
 ### The ablation table
 
@@ -65,6 +65,8 @@ The "information starvation" row (shuffled + starved) is the punchline: we maske
 
 Notably, the mean GHE barely moves across starvation conditions (0.329 → 0.367). What *does* change is the variance across seeds (0.027 → 0.081). The interpretation: auxiliary observation channels scaffold the *reliability* of learning, not the *geometry* of what gets learned — consistent with Vapnik & Vashist's Learning Using Privileged Information framework, and with Hu et al. (2024)'s Scaffolder result on DreamerV3 specifically.
 
+*Sources: `artifacts/reports/ablation_multiseed_results.json`.*
+
 ### The untrained baseline
 
 To distinguish architecture from learning, we ran an untrained DreamerV3 (random weights, zero gradient updates) on identical observation sequences:
@@ -82,6 +84,8 @@ The untrained baseline's arc R² = 0.985 deserves careful interpretation. The ob
 But the metrics that probe *representational quality* tell a different story. RSA drops from 0.982 to 0.591: the untrained representations are only weakly ordinal. PCA PC1 drops from 73% to 23%: the trained agent concentrates count into a dominant axis; the untrained agent spreads variance diffusely. The interpretation is that architecture provides a weak monotonic scaffold, which training transforms into a precise 1D manifold with uniform spacing, ordinal structure, and dimensional parsimony.
 
 This parallels Kim et al. (2021), who showed untrained networks can have more individual number-selective units than trained ones (16.9% vs 9.6%). Unit-level selectivity and population-level geometry can dissociate — and manifold-level analysis captures what single-unit tuning misses.
+
+*Source: `artifacts/reports/ablation_multiseed_results.json` (untrained_baseline section).*
 
 ### The random projection surprise
 
@@ -196,6 +200,8 @@ Three independent measurements (posterior, imagination, battery carry propagatio
 
 A methodological note worth preserving: an initial imagination analysis used probes trained on decimal-count-derived labels, which only update after the full cascade completes. Those probes were blind to intermediate cascade states and compressed a 10-step sequential process into a 1-step jump, producing a false-negative "partial cascade" verdict. The corrected analysis used column-state probes matching the carry propagation methodology exactly. Probe calibration matters; the cost of getting this wrong is misdiagnosing active simulation as passive interpolation.
 
+*Source: `artifacts/binary_successor/imagination_rollout_colstate.json`. Posterior span 10.02, imagination span 10.31, confirmed against raw data.*
+
 ### The thesis
 
 The number seven is not a single geometry. In the gathering grid, seven is a position on a smooth curve. In the binary machine, seven is a vertex of a hypercube. Both are correct. Both are complete. Neither is "the" representation of seven.
@@ -222,7 +228,7 @@ We also observed a surprising pattern in *timing*: a brief regularization pulse 
 
 ## What the project found so far
 
-1. **A number line emerges from gathering alone.** Five-seed replication, unanimous topology (β₀=1, β₁=0), RSA > 0.975, robust to full information starvation. *Causal intervention remains the main gap.*
+1. **A number line emerges from gathering alone.** Five-seed replication, unanimous topology (β₀=1, β₁=0), RSA > 0.975, robust to full information starvation, architecture-independent in every condition we tested. *Causal intervention remains the main gap.*
 
 2. **The random projection / permutation finding sharpens the story.** Coordinate-structure disruption — not feature mixing — cleans up meso-scale representation quality in ways invisible to standard centroid-based metrics. Probable general lesson about representation evaluation: summary statistics miss scale-dependent structure.
 
@@ -252,80 +258,4 @@ The thesis stands: same concept, different physics, different geometry. Counting
 
 ---
 
-## Reproducing Key Results
-
-### Requirements
-
-```bash
-pip install -r requirements.txt
-```
-
-### Training a model (GPU recommended, ~4 hours on RTX 4090)
-
-```bash
-cd scripts
-# Baseline (grid world)
-python3 train.py --config grid_baseline --steps 200000
-
-# Random projection (best real-time accuracy)
-python3 train.py --config grid_randproj --steps 200000
-
-# Binary counting world
-python3 dreamer_binary.py --steps 300000
-```
-
-### Running the evaluation battery
-
-```bash
-cd scripts
-# Full battery: GHE, topology, RSA, probe SNR, projections
-python3 full_battery.py --checkpoint-dir ../artifacts/checkpoints/YOUR_RUN
-```
-
-### Generating figures
-
-```bash
-cd scripts
-python3 visualize_probe_decodability.py  # The three key figures
-python3 generate_figures_v2.py           # Publication figures
-```
-
-Pretrained weights for the random projection model (our best) are included in `models/randproj_clean/`.
-
-## Repository Structure
-
-```
-anim-counting/
-├── README.md
-├── UNIFIER.md                    # Binary world + FP Unifier write-up
-├── LICENSE                       # MIT
-├── CITATION.cff
-├── requirements.txt
-├── figures/                      # Key figures for this README
-├── models/
-│   └── randproj_clean/           # Pretrained weights + probe + PCA
-├── scripts/
-│   ├── train.py                  # DreamerV3 training (grid world)
-│   ├── dreamer_binary.py         # DreamerV3 training (binary world)
-│   ├── full_battery.py           # Complete evaluation suite
-│   ├── counting_env_pure.py      # Pure Python environment (50x faster than JS)
-│   ├── visualize_counting.py     # Real-time manifold visualization
-│   ├── hidden_state_anatomy.py   # Per-dimension analysis
-│   ├── successor_analysis.py     # Successor function characterization
-│   ├── unifier_successor_analysis.py  # Binary successor in unifier
-│   └── ...
-├── cloud/                        # RunPod GPU training scripts
-├── artifacts/
-│   ├── reports/                  # Verified analysis reports (JSON)
-│   ├── binary_successor/         # Binary successor + imagination data
-│   └── paper/                    # Paper draft
-└── writeups/                     # Three-tier write-ups (layman, blog, paper)
-```
-
-## Acknowledgments
-
-This project was built by **major-scale** and **Claude** (Anthropic) working together.
-
-## License
-
-MIT
+*Implementation by major-scale and Claude (Anthropic). Primary repo: [anima-bridge](../README.md). Paper draft (counting half): [counting_from_observation.md](../artifacts/paper/counting_from_observation.md). Extended draft covering the binary world and integration: [UNIFIER.md](../UNIFIER.md) (note: numerical tables in the binary/integration sections cite analysis outputs that are being re-exported from cloud runs; treat those specific numbers as preliminary until the formal paper).*
