@@ -608,6 +608,8 @@ DreamerV3 with MLP encoder/decoder. RSSM: 512-dim GRU deterministic + 32×32 dis
 
 **Data collection notes.** An earlier version of the binary-battery data-collection loop read environment state before stepping in a `while not done` loop, which omitted the final 14→15 transition when the env set `done=True` simultaneously with the last count increment. This was corrected prior to the reported results. Terminal-state sampling is asymmetric across counts: count=15 occurs once per episode (at episode termination), yielding ~15 stable samples versus 500+ for other counts, which undermines centroid precision. Magnitude-based statistics (step magnitude, CV, cosine pairs) therefore exclude transition 14→15; directional statistics (sign agreement, orthogonality, decomposition, per-bit sign) are unaffected by centroid magnitude and include all 15 transitions.
 
+**Subspace-illusion test (Makelov et al. 2023).** The bit-flip probe directions were verified to be causally faithful rather than subspace illusions: each probe direction was decomposed into components aligned with the rowspace and approximate nullspace of the decoder's h_t projection, and the rowspace-only component was shown to carry the intervention effect on its own. All four directions pass the test; the decoder's h_t projection is effectively full rank, so the structural precondition for a Makelov-style illusion is absent. See `results/makelov_subspace_test.md` for the full protocol and per-bit numbers.
+
 ## Appendix D: Full ablation condition specifications
 
 | Condition | Arrangement | Masked | Shuffled | Format | Steps |
